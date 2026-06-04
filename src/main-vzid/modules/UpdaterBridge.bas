@@ -1,11 +1,13 @@
 Attribute VB_Name = "UpdaterBridge"
 Option Explicit
 
-Public Function UpdaterBridge_StartPreparedUpdate(ByVal sourcePath As String, ByVal releaseVersion As String, ByVal expectedSha256 As String, ByVal restartExcel As Boolean, Optional ByVal installerMode As Boolean = False) As Boolean
+Public Function UpdaterBridge_StartPreparedUpdate(ByVal sourcePath As String, ByVal releaseVersion As String, ByVal expectedSha256 As String, ByVal restartExcel As Boolean, Optional ByVal installerMode As Boolean = False, Optional ByVal downloadUrl As String = "") As Boolean
     On Error GoTo failed
 
     If LenB(Dir$(MainConfig_UpdaterExePath())) = 0 Then Exit Function
-    If LenB(Dir$(sourcePath)) = 0 Then Exit Function
+    If (Not installerMode) Or LenB(Trim$(downloadUrl)) = 0 Then
+        If LenB(Dir$(sourcePath)) = 0 Then Exit Function
+    End If
 
     Dim commandText As String
     commandText = UpdaterBridge_Quote(MainConfig_UpdaterExePath()) & _
@@ -20,6 +22,9 @@ Public Function UpdaterBridge_StartPreparedUpdate(ByVal sourcePath As String, By
 
     If LenB(Trim$(expectedSha256)) > 0 Then
         commandText = commandText & " --expected-sha256 " & UpdaterBridge_Quote(expectedSha256)
+    End If
+    If LenB(Trim$(downloadUrl)) > 0 Then
+        commandText = commandText & " --download-url " & UpdaterBridge_Quote(downloadUrl)
     End If
 
     Dim shellObject As Object

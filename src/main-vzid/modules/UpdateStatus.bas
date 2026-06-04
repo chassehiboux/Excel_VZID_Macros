@@ -21,6 +21,12 @@ Public Function UpdateStatus_RibbonText() As String
             Else
                 UpdateStatus_RibbonText = "Обновления: ждёт закрытия Excel"
             End If
+        Case "scheduled"
+            If LenB(preparedVersion) > 0 Then
+                UpdateStatus_RibbonText = "Обновления: подготовлена " & UpdateStatus_FormatVersion(preparedVersion)
+            Else
+                UpdateStatus_RibbonText = "Обновления: ждёт закрытия Excel"
+            End If
         Case "updater_upgrade_required"
             If LenB(availableVersion) > 0 Then
                 UpdateStatus_RibbonText = "Обновления: нужен setup для " & UpdateStatus_FormatVersion(availableVersion)

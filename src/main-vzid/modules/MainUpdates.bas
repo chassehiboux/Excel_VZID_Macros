@@ -76,21 +76,20 @@ Private Sub MainUpdates_CheckManifest(ByVal interactive As Boolean)
     End If
 
     minimumUpdaterVersion = MainUpdates_ReadMinUpdaterVersion(manifestText)
+    downloadUrl = MainConfig_ReadJsonString(manifestText, "setupDownloadUrl", "")
+    If LenB(downloadUrl) = 0 Then
+        statusMessage = "Файл manifest.json не содержит setupDownloadUrl."
+        MainConfig_WriteUpdateState "check_failed", statusMessage, "", ""
+        If interactive Then MsgBox statusMessage, vbExclamation, "VZID"
+        Exit Sub
+    End If
+
     If MainUpdates_CompareVersions(minimumUpdaterVersion, currentUpdaterVersion) > 0 Then
-        downloadUrl = MainConfig_ReadJsonString(manifestText, "setupDownloadUrl", "")
         statusMessage = "Для версии " & MainUpdates_FormatVersion(availableVersion) & " нужен новый setup.exe."
         MainConfig_WriteUpdateState "updater_upgrade_required", statusMessage, availableVersion, downloadUrl
         If interactive Then
             MsgBox statusMessage & vbCrLf & "Нажмите кнопку 'Обновить' на вкладке VZID.", vbInformation, "VZID"
         End If
-        Exit Sub
-    End If
-
-    downloadUrl = MainConfig_ReadJsonString(manifestText, "mainDownloadUrl", "")
-    If LenB(downloadUrl) = 0 Then
-        statusMessage = "Файл manifest.json не содержит mainDownloadUrl."
-        MainConfig_WriteUpdateState "check_failed", statusMessage, "", ""
-        If interactive Then MsgBox statusMessage, vbExclamation, "VZID"
         Exit Sub
     End If
 
@@ -144,9 +143,9 @@ Private Sub MainUpdates_DownloadAvailableRelease(ByVal interactive As Boolean)
 
     minimumUpdaterVersion = MainUpdates_ReadMinUpdaterVersion(manifestText)
     If MainUpdates_CompareVersions(minimumUpdaterVersion, currentUpdaterVersion) > 0 Then
-        MainUpdates_DownloadSetupRelease manifestText, availableVersion, interactive
+        MainUpdates_DownloadSetupRelease manifestText, availableVersion, interactive, False
     Else
-        MainUpdates_DownloadMainRelease manifestText, availableVersion, interactive
+        MainUpdates_DownloadSetupRelease manifestText, availableVersion, interactive, True
     End If
     Exit Sub
 
@@ -214,7 +213,7 @@ failed:
     End If
 End Sub
 
-Private Sub MainUpdates_DownloadSetupRelease(ByVal manifestText As String, ByVal availableVersion As String, ByVal interactive As Boolean)
+Private Sub MainUpdates_DownloadSetupRelease(ByVal manifestText As String, ByVal availableVersion As String, ByVal interactive As Boolean, ByVal downloadViaUpdater As Boolean)
     On Error GoTo failed
 
     Dim downloadUrl As String
@@ -240,6 +239,11 @@ Private Sub MainUpdates_DownloadSetupRelease(ByVal manifestText As String, ByVal
 
     MainConfig_EnsureBaseFolders
     targetPath = MainConfig_PreparedSetupPathForVersion(availableVersion)
+
+    If downloadViaUpdater Then
+        MainUpdates_LaunchPreparedUpdate targetPath, availableVersion, expectedSha256, interactive, True, downloadUrl
+        Exit Sub
+    End If
 
     If Not MainUpdates_DownloadBinary(downloadUrl, targetPath, statusCode) Then
         MainConfig_WriteUpdateState "download_failed", "Не удалось скачать новый setup.exe из GitHub Releases.", availableVersion, downloadUrl
@@ -270,30 +274,38 @@ failed:
     End If
 End Sub
 
-Private Sub MainUpdates_LaunchPreparedUpdate(ByVal targetPath As String, ByVal releaseVersion As String, ByVal expectedSha256 As String, ByVal interactive As Boolean, ByVal installerMode As Boolean)
+Private Sub MainUpdates_LaunchPreparedUpdate(ByVal targetPath As String, ByVal releaseVersion As String, ByVal expectedSha256 As String, ByVal interactive As Boolean, ByVal installerMode As Boolean, Optional ByVal downloadUrl As String = "")
     On Error GoTo failed
 
     Dim restartNow As Boolean
+    Dim statusCode As String
     Dim statusMessage As String
     Dim successMessage As String
+    Dim downloadAfterClose As Boolean
 
     restartNow = False
+    downloadAfterClose = (installerMode And LenB(Trim$(downloadUrl)) > 0)
     MainConfig_WriteValue "preparedMainVersion", releaseVersion
     MainConfig_WriteValue "preparedMainPath", targetPath
 
-    If installerMode Then
+    If downloadAfterClose Then
+        statusCode = "scheduled"
+        statusMessage = "Обновление поставлено в очередь. setup.exe будет скачан и запущен после полного закрытия Excel."
+    ElseIf installerMode Then
+        statusCode = "downloaded"
         statusMessage = "Новый setup.exe подготовлен. Он будет запущен после полного закрытия Excel."
     Else
+        statusCode = "downloaded"
         statusMessage = "Обновление подготовлено. Оно установится после полного закрытия Excel."
     End If
 
-    MainConfig_WriteUpdateState "downloaded", statusMessage, releaseVersion, MainConfig_ReadValue("availableMainDownloadUrl", ""))
+    MainConfig_WriteUpdateState statusCode, statusMessage, releaseVersion, IIf(LenB(Trim$(downloadUrl)) > 0, downloadUrl, MainConfig_ReadValue("availableMainDownloadUrl", "")))
 
     If interactive Then
-        restartNow = MainUpdates_AskRestartNow()
+        restartNow = MainUpdates_AskRestartNow(installerMode, downloadAfterClose)
     End If
 
-    If Not UpdaterBridge_StartPreparedUpdate(targetPath, releaseVersion, expectedSha256, restartNow, installerMode) Then
+    If Not UpdaterBridge_StartPreparedUpdate(targetPath, releaseVersion, expectedSha256, restartNow, installerMode, downloadUrl) Then
         MainConfig_WriteUpdateState "activation_failed", "Не удалось запустить updater.exe.", releaseVersion, ""
         If interactive Then
             MsgBox "Не удалось запустить updater.exe.", vbExclamation, "VZID"
@@ -305,7 +317,9 @@ Private Sub MainUpdates_LaunchPreparedUpdate(ByVal targetPath As String, ByVal r
         Application.Quit
     ElseIf interactive Then
         successMessage = "Обновление подготовлено." & vbCrLf & "Оно установится после полного закрытия всех окон Excel."
-        If installerMode Then
+        If downloadAfterClose Then
+            successMessage = "Обновление поставлено в очередь." & vbCrLf & "setup.exe будет скачан и запущен после полного закрытия всех окон Excel."
+        ElseIf installerMode Then
             successMessage = "Новый setup.exe подготовлен." & vbCrLf & "Он будет запущен после полного закрытия всех окон Excel."
         End If
         MsgBox successMessage, vbInformation, "VZID"
@@ -320,13 +334,26 @@ failed:
     End If
 End Sub
 
-Private Function MainUpdates_AskRestartNow() As Boolean
+Private Function MainUpdates_AskRestartNow(Optional ByVal installerMode As Boolean = False, Optional ByVal downloadAfterClose As Boolean = False) As Boolean
     Dim reply As VbMsgBoxResult
+    Dim prompt As String
+
+    If downloadAfterClose Then
+        prompt = "Обновление поставлено в очередь." & vbCrLf & _
+            "setup.exe будет скачан и запущен только после полного закрытия всех окон Excel." & vbCrLf & vbCrLf & _
+            "Закрыть Excel сейчас?"
+    ElseIf installerMode Then
+        prompt = "Новый setup.exe подготовлен." & vbCrLf & _
+            "Он будет запущен только после полного закрытия всех окон Excel." & vbCrLf & vbCrLf & _
+            "Закрыть Excel сейчас?"
+    Else
+        prompt = "Обновление подготовлено." & vbCrLf & _
+            "Оно установится только после полного закрытия всех окон Excel." & vbCrLf & vbCrLf & _
+            "Закрыть Excel сейчас?"
+    End If
 
     reply = MsgBox( _
-        "Обновление подготовлено." & vbCrLf & _
-        "Оно установится только после полного закрытия всех окон Excel." & vbCrLf & vbCrLf & _
-        "Закрыть Excel сейчас?", _
+        prompt, _
         vbYesNo + vbQuestion, _
         "VZID")
 

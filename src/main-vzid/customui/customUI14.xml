@@ -48,7 +48,7 @@
         </group>
         <group id="grpUpdates" label="Обновление">
           <button id="btnCheckUpdates" label="Проверить обновления" screentip="Проверить обновления" supertip="Проверяет GitHub Releases и сообщает, доступна ли новая версия надстройки." onAction="RibbonVZID_CheckUpdates" />
-          <button id="btnDownloadUpdate" label="Обновить" screentip="Скачать обновление" supertip="Скачивает новую версию надстройки или новый setup.exe, если этот релиз требует обновления установщика." onAction="RibbonVZID_DownloadUpdate" getEnabled="RibbonVZID_GetDownloadUpdateEnabled" />
+          <button id="btnDownloadUpdate" label="Обновить" screentip="Подготовить обновление" supertip="Ставит обновление в очередь. После полного закрытия Excel локальный updater.exe установит новую версию через setup.exe." onAction="RibbonVZID_DownloadUpdate" getEnabled="RibbonVZID_GetDownloadUpdateEnabled" />
           <button id="btnInstallFromFile" label="Установить из файла" screentip="Установить локальный файл" supertip="Позволяет выбрать локальный файл MainVZID.xlam и подготовить его к установке после полного закрытия Excel." onAction="RibbonVZID_InstallFromFile" />
           <labelControl id="lblUpdateStatus" getLabel="RibbonVZID_GetUpdateStatusLabel" />
         </group>

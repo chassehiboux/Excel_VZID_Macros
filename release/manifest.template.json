@@ -1,12 +1,12 @@
 {
   "schemaVersion": "1",
-  "releaseVersion": "0.3.1",
+  "releaseVersion": "0.3.2",
   "publishedAt": "2026-06-04T00:00:00Z",
   "minLoaderVersion": "0.3.0",
-  "minUpdaterVersion": "0.3.0",
-  "mainDownloadUrl": "https://github.com/chassehiboux/Excel_VZID_Macros/releases/download/v0.3.1/MainVZID.xlam",
+  "minUpdaterVersion": "0.3.2",
+  "mainDownloadUrl": "https://github.com/chassehiboux/Excel_VZID_Macros/releases/download/v0.3.2/MainVZID.xlam",
   "mainSha256": "PUT_REAL_SHA256_HERE",
-  "setupDownloadUrl": "https://github.com/chassehiboux/Excel_VZID_Macros/releases/download/v0.3.1/setup.exe",
+  "setupDownloadUrl": "https://github.com/chassehiboux/Excel_VZID_Macros/releases/download/v0.3.2/setup.exe",
   "setupSha256": "PUT_REAL_SETUP_SHA256_HERE",
-  "notesUrl": "https://github.com/chassehiboux/Excel_VZID_Macros/releases/tag/v0.3.1"
+  "notesUrl": "https://github.com/chassehiboux/Excel_VZID_Macros/releases/tag/v0.3.2"
 }

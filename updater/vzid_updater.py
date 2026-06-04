@@ -9,6 +9,7 @@ import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
+from urllib import request
 
 
 CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
@@ -24,6 +25,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--version", required=True)
     parser.add_argument("--mode", default="main", choices=("main", "setup"))
     parser.add_argument("--expected-sha256", default="")
+    parser.add_argument("--download-url", default="")
     parser.add_argument("--restart-excel", default="0")
     parser.add_argument("--skip-wait-for-excel", action="store_true")
     return parser.parse_args()
@@ -45,6 +47,18 @@ def file_sha256(path: Path) -> str:
                 break
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def verify_expected_sha256(path: Path, expected_sha256: str) -> None:
+    expected_sha256 = expected_sha256.strip().lower()
+    if not expected_sha256:
+        return
+
+    actual_sha256 = file_sha256(path).lower()
+    if actual_sha256 != expected_sha256:
+        raise RuntimeError(
+            f"Контрольная сумма файла обновления не совпала. Ожидалось {expected_sha256}, получено {actual_sha256}."
+        )
 
 
 def excel_is_running() -> bool:
@@ -107,6 +121,33 @@ def relaunch_excel(log_path: Path) -> None:
         write_log(log_path, f"Не удалось запустить Excel повторно: {exc}")
 
 
+def download_file(url: str, target_path: Path, log_path: Path, version_text: str) -> None:
+    temp_path = target_path.with_name(target_path.name + ".download")
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        if temp_path.exists():
+            temp_path.unlink()
+
+        req = request.Request(url, headers={"User-Agent": f"VZID-Updater/{version_text}"})
+        with request.urlopen(req, timeout=60) as response, temp_path.open("wb") as handle:
+            while True:
+                chunk = response.read(1024 * 1024)
+                if not chunk:
+                    break
+                handle.write(chunk)
+
+        os.replace(temp_path, target_path)
+        write_log(log_path, f"Файл скачан: {target_path}")
+    except Exception:
+        try:
+            if temp_path.exists():
+                temp_path.unlink()
+        except Exception:
+            pass
+        raise
+
+
 def install_update(args: argparse.Namespace) -> int:
     source_path = Path(args.source).resolve()
     target_path = Path(args.target).resolve()
@@ -121,21 +162,21 @@ def install_update(args: argparse.Namespace) -> int:
         if not args.skip_wait_for_excel:
             wait_for_excel_close(log_path)
 
-        if not source_path.exists():
-            raise FileNotFoundError(f"Файл обновления не найден: {source_path}")
-
-        if expected_sha256:
-            actual_sha256 = file_sha256(source_path).lower()
-            if actual_sha256 != expected_sha256:
-                raise RuntimeError("Контрольная сумма файла обновления не совпала.")
-
         if args.mode == "setup":
             return run_setup_update(
                 source_path=source_path,
+                download_url=args.download_url.strip(),
+                expected_sha256=expected_sha256,
                 config_path=config_path,
                 log_path=log_path,
                 restart_excel=restart_excel,
+                version_text=args.version,
             )
+
+        if not source_path.exists():
+            raise FileNotFoundError(f"Файл обновления не найден: {source_path}")
+
+        verify_expected_sha256(source_path, expected_sha256)
 
         target_path.parent.mkdir(parents=True, exist_ok=True)
         backup_dir.mkdir(parents=True, exist_ok=True)
@@ -172,8 +213,24 @@ def install_update(args: argparse.Namespace) -> int:
         return 1
 
 
-def run_setup_update(*, source_path: Path, config_path: Path, log_path: Path, restart_excel: bool) -> int:
+def run_setup_update(
+    *,
+    source_path: Path,
+    download_url: str,
+    expected_sha256: str,
+    config_path: Path,
+    log_path: Path,
+    restart_excel: bool,
+    version_text: str,
+) -> int:
     try:
+        if download_url:
+            write_log(log_path, f"Скачивание setup.exe из {download_url}")
+            download_file(download_url, source_path, log_path, version_text)
+        elif not source_path.exists():
+            raise FileNotFoundError(f"Файл setup.exe не найден: {source_path}")
+
+        verify_expected_sha256(source_path, expected_sha256)
         write_log(log_path, f"Запуск setup.exe: {source_path}")
         result = subprocess.run(
             [str(source_path), "--no-ui"],
