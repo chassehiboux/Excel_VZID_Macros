@@ -18,21 +18,13 @@ CONTENT_TYPES_NS = "http://schemas.openxmlformats.org/package/2006/content-types
 RELS_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
 CUSTOM_UI_REL_TYPE = "http://schemas.microsoft.com/office/2007/relationships/ui/extensibility"
 CUSTOM_UI_PART_NAME = "/customUI/customUI14.xml"
-CUSTOM_UI_TARGET = "customUI/customUI14.xml"
+CUSTOM_UI_TARGET = "/customUI/customUI14.xml"
 CUSTOM_UI_CONTENT_TYPE = "application/xml"
 
 VBEXT_CT_STD_MODULE = 1
 VBEXT_CT_CLASS_MODULE = 2
 VB_NAME_PATTERN = re.compile(r'^Attribute VB_Name = "([^"]+)"$', re.MULTILINE)
 SOURCE_TEXT_ENCODINGS = ("utf-8", "cp1251")
-SKIPPED_FORM_NAMES = {
-    "frmVZID_KGN.frm",
-    "frmVZID_TMN.frm",
-    "frmVZID_EKB.frm",
-    "frmVZID_CHLB.frm",
-}
-
-
 def import_components(vb_project, source_dir: Path) -> None:
     if not source_dir.exists():
         return
@@ -42,8 +34,6 @@ def import_components(vb_project, source_dir: Path) -> None:
             import_text_component(vb_project, path)
 
     for path in sorted(source_dir.glob("*.frm")):
-        if path.name in SKIPPED_FORM_NAMES:
-            continue
         validate_form_dependencies(path)
         vb_project.VBComponents.Import(str(path))
 
