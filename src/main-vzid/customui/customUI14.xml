@@ -1,0 +1,30 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="RibbonVZID_OnLoad">
+  <ribbon>
+    <tabs>
+      <tab id="tabVZID" label="VZID">
+        <group id="grpRegion" label="Регион">
+          <dropDown
+            id="ddRegion"
+            label="Регион"
+            sizeString="Сопроводительные по получателю"
+            getItemCount="RibbonVZID_GetRegionCount"
+            getItemID="RibbonVZID_GetRegionId"
+            getItemLabel="RibbonVZID_GetRegionLabel"
+            getSelectedItemIndex="RibbonVZID_GetSelectedRegionIndex"
+            onAction="RibbonVZID_OnRegionChanged" />
+        </group>
+        <group id="grpCommands" label="Команды">
+          <button id="btnDocPackets" label="Пакеты" tag="DOC_PACKETS" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" />
+          <button id="btnMakeCoverLetters" label="Сопроводительные" tag="MAKE_COVER_LETTERS" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" />
+          <button id="btnMakeCoverLettersByRecipient" label="Сопроводительные по получателю" tag="MAKE_COVER_LETTERS_BY_RECIPIENT" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" />
+          <button id="btnRicZakaznyeCreate" label="Заказные" tag="RIC_ZAKAZNYE_CREATE" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" />
+        </group>
+        <group id="grpUpdates" label="Обновление">
+          <button id="btnCheckUpdates" label="Проверить обновления" onAction="RibbonVZID_CheckUpdates" />
+          <button id="btnInstallFromFile" label="Установить из файла" onAction="RibbonVZID_InstallFromFile" />
+          <labelControl id="lblUpdateStatus" getLabel="RibbonVZID_GetUpdateStatusLabel" />
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>

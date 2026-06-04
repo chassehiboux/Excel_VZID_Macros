@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1",
+  "repoUrl": "https://github.com/chassehiboux/Excel_VZID_Macros",
+  "manifestUrl": "https://github.com/chassehiboux/Excel_VZID_Macros/releases/latest/download/manifest.json",
+  "selectedRegion": "KGN",
+  "activeMainVersion": "0.1.0",
+  "activeLoaderVersion": "0.1.0",
+  "availableMainVersion": "",
+  "availableMainDownloadUrl": "",
+  "pendingMainVersion": "",
+  "pendingMainPath": "",
+  "lastUpdateCheckAt": "",
+  "lastUpdateStatus": "never",
+  "lastUpdateMessage": "Проверка обновлений еще не выполнялась.",
+  "fullAccessUsersCsv": "dzuikevich",
+  "commandAccessDocPacketsCsv": "*",
+  "commandAccessMakeCoverLettersCsv": "dzuikevich",
+  "commandAccessMakeCoverLettersByRecipientCsv": "dzuikevich",
+  "commandAccessRicZakaznyeCreateCsv": "dzuikevich"
+}
