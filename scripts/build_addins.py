@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 import shutil
 import tempfile
 import zipfile
@@ -23,14 +24,66 @@ CUSTOM_UI_CONTENT_TYPE = "application/xml"
 ET.register_namespace("", CONTENT_TYPES_NS)
 ET.register_namespace("", RELS_NS)
 
+VBEXT_CT_STD_MODULE = 1
+VBEXT_CT_CLASS_MODULE = 2
+VB_NAME_PATTERN = re.compile(r'^Attribute VB_Name = "([^"]+)"$', re.MULTILINE)
+
 
 def import_components(vb_project, source_dir: Path) -> None:
     if not source_dir.exists():
         return
 
-    for extension in (".bas", ".cls", ".frm"):
+    for extension in (".bas", ".cls"):
         for path in sorted(source_dir.glob(f"*{extension}")):
-            vb_project.VBComponents.Import(str(path))
+            import_text_component(vb_project, path)
+
+    for path in sorted(source_dir.glob("*.frm")):
+        vb_project.VBComponents.Import(str(path))
+
+
+def import_text_component(vb_project, source_path: Path) -> None:
+    source_text = source_path.read_text(encoding="utf-8")
+    component_name = extract_vb_name(source_text, source_path)
+    component_type = component_type_for_path(source_path)
+    module_text = remove_attribute_block(source_text)
+
+    component = vb_project.VBComponents.Add(component_type)
+    component.Name = component_name
+
+    code_module = component.CodeModule
+    if code_module.CountOfLines:
+        code_module.DeleteLines(1, code_module.CountOfLines)
+    code_module.AddFromString(module_text)
+
+
+def extract_vb_name(source_text: str, source_path: Path) -> str:
+    match = VB_NAME_PATTERN.search(source_text)
+    if match is None:
+        raise ValueError(f"Missing Attribute VB_Name in {source_path}")
+    return match.group(1)
+
+
+def component_type_for_path(source_path: Path) -> int:
+    if source_path.suffix.lower() == ".bas":
+        return VBEXT_CT_STD_MODULE
+    if source_path.suffix.lower() == ".cls":
+        return VBEXT_CT_CLASS_MODULE
+    raise ValueError(f"Unsupported text component type: {source_path}")
+
+
+def remove_attribute_block(source_text: str) -> str:
+    lines = source_text.splitlines()
+    body_start = 0
+    for index, line in enumerate(lines):
+        if line.startswith("Attribute VB_"):
+            body_start = index + 1
+            continue
+        if body_start and line == "":
+            body_start = index + 1
+            continue
+        break
+
+    return "\n".join(lines[body_start:])
 
 
 def replace_thisworkbook_code(workbook, vb_project, workbook_code_path: Path) -> None:
