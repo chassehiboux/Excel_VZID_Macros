@@ -26,7 +26,6 @@
               <button id="btnMakeCoverLettersByRecipient" label="1 сопровод для WSS" tag="MAKE_COVER_LETTERS_BY_RECIPIENT" screentip="Сопровод для WSS" supertip="Формирует одно сопроводительное письмо по получателю для выбранного региона, если этот сценарий настроен." onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" getVisible="RibbonVZID_GetCommandVisible" />
               <button id="btnMakeCoverLetters" label="Итоговые сопроводы" tag="MAKE_COVER_LETTERS" screentip="Итоговые сопроводы" supertip="Формирует итоговые сопроводительные документы для выбранного региона, если этот сценарий поддерживается." onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" getVisible="RibbonVZID_GetCommandVisible" />
             </box>
-            <separator id="sepDocumentsColumns" />
             <box id="boxDocumentsColumnExtra" boxStyle="vertical">
               <button id="btnZakaznyeCreate" label="Заказной реестр" tag="ZAKAZNYE_CREATE" screentip="Заказной реестр" supertip="Формирует заказной реестр для выбранного региона, если этот сценарий поддерживается." onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" getVisible="RibbonVZID_GetCommandVisible" />
             </box>
@@ -39,7 +38,6 @@
               <button id="btnPdfSigner" label="Подпись уведомлений/заявлений" tag="PDF_SIGNER" screentip="Подпись уведомлений" supertip="Запускает инструмент подписи уведомлений и заявлений." onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" getVisible="RibbonVZID_GetCommandVisible" />
               <button id="btnPdfScanner" label="Извлечение постановлений из PDF" tag="PDF_SCANNER" screentip="Извлечение из PDF" supertip="Запускает извлечение постановлений об окончании БИ из PDF." onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" getVisible="RibbonVZID_GetCommandVisible" />
             </box>
-            <separator id="sepActionsTmnColumns" getVisible="RibbonVZID_GetTmnLayoutVisible" />
             <box id="boxActionsColumnTmn" boxStyle="vertical" getVisible="RibbonVZID_GetTmnLayoutVisible">
               <button id="btnOspSelect" label="Выбрать ОСП и Адрес" tag="OSP_SELECT" screentip="Выбрать ОСП" supertip="Открывает выбор ОСП и адреса. Кнопка доступна только для региона Тюмень." onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" />
               <button id="btnHotkeySetup" label="Горячая клавиша" tag="HOTKEY_SETUP" screentip="Горячая клавиша" supertip="Открывает настройку горячей клавиши для выбора ОСП. Кнопка доступна только для региона Тюмень." onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" />
