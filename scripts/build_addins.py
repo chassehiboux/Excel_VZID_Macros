@@ -18,11 +18,8 @@ CONTENT_TYPES_NS = "http://schemas.openxmlformats.org/package/2006/content-types
 RELS_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
 CUSTOM_UI_REL_TYPE = "http://schemas.microsoft.com/office/2007/relationships/ui/extensibility"
 CUSTOM_UI_PART_NAME = "/customUI/customUI14.xml"
-CUSTOM_UI_TARGET = "/customUI/customUI14.xml"
+CUSTOM_UI_TARGET = "customUI/customUI14.xml"
 CUSTOM_UI_CONTENT_TYPE = "application/xml"
-
-ET.register_namespace("", CONTENT_TYPES_NS)
-ET.register_namespace("", RELS_NS)
 
 VBEXT_CT_STD_MODULE = 1
 VBEXT_CT_CLASS_MODULE = 2
@@ -212,7 +209,7 @@ def patch_custom_ui(xlam_path: Path, custom_ui_path: Path) -> None:
             content_changed = True
 
         if content_changed:
-            content_tree.write(content_types_path, encoding="utf-8", xml_declaration=True)
+            write_xml_with_default_namespace(content_tree, content_types_path, CONTENT_TYPES_NS)
 
         rels_path = temp_dir / "_rels" / ".rels"
         rels_tree = ET.parse(rels_path)
@@ -250,7 +247,7 @@ def patch_custom_ui(xlam_path: Path, custom_ui_path: Path) -> None:
                 rel_changed = True
 
         if rel_changed:
-            rels_tree.write(rels_path, encoding="utf-8", xml_declaration=True)
+            write_xml_with_default_namespace(rels_tree, rels_path, RELS_NS)
 
         rebuilt_path = xlam_path.with_suffix(".rebuilt")
         if rebuilt_path.exists():
@@ -271,6 +268,14 @@ def build_main(output_dir: Path) -> Path:
     create_addin(MAIN_SRC, main_path)
     patch_custom_ui(main_path, MAIN_SRC / "customui" / "customUI14.xml")
     return main_path
+
+
+def write_xml_with_default_namespace(tree: ET.ElementTree, target_path: Path, namespace_uri: str) -> None:
+    xml_text = ET.tostring(tree.getroot(), encoding="unicode")
+    xml_text = xml_text.replace("ns0:", "")
+    xml_text = xml_text.replace(":ns0", "")
+    xml_text = xml_text.replace('xmlns:ns0="' + namespace_uri + '"', 'xmlns="' + namespace_uri + '"')
+    target_path.write_text("<?xml version='1.0' encoding='utf-8'?>\n" + xml_text, encoding="utf-8")
 
 
 def main() -> int:
