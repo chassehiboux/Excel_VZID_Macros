@@ -34,12 +34,12 @@
 
 ### Целевые папки
 
-- `%LocalAppData%\VZID\addin\`
-- `%LocalAppData%\VZID\updater\`
-- `%LocalAppData%\VZID\updates\`
-- `%LocalAppData%\VZID\backup\`
-- `%LocalAppData%\VZID\config\`
-- `%LocalAppData%\VZID\logs\`
+- `%AppData%\Microsoft\Excel\LocalCache\VZID\addin\`
+- `%AppData%\Microsoft\Excel\LocalCache\VZID\updater\`
+- `%AppData%\Microsoft\Excel\LocalCache\VZID\updates\`
+- `%AppData%\Microsoft\Excel\LocalCache\VZID\backup\`
+- `%AppData%\Microsoft\Excel\LocalCache\VZID\config\`
+- `%AppData%\Microsoft\Excel\LocalCache\VZID\logs\`
 
 ## 2. MainVZID
 
@@ -187,7 +187,7 @@
 
 ### Путь
 
-- `%LocalAppData%\VZID\config\config.json`
+- `%AppData%\Microsoft\Excel\LocalCache\VZID\config\config.json`
 
 ### Что хранит
 

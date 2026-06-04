@@ -18,6 +18,7 @@ LEGACY_LOADER_FILE = "LoaderVZID.xlam"
 MAIN_FILE = "MainVZID.xlam"
 UPDATER_FILE = "updater.exe"
 CONFIG_TEMPLATE = "config.template.json"
+STARTUP_FILE_NAMES = {LEGACY_LOADER_FILE.lower(), MAIN_FILE.lower()}
 INSTALL_BASE_DIR: Path | None = None
 NO_UI = False
 
@@ -26,10 +27,39 @@ def base_dir() -> Path:
     if INSTALL_BASE_DIR is not None:
         return INSTALL_BASE_DIR
 
+    return local_cache_root() / APP_NAME
+
+
+def appdata_root() -> Path:
+    if INSTALL_BASE_DIR is not None:
+        return INSTALL_BASE_DIR.parent
+
+    root = os.environ.get("APPDATA") or os.environ.get("LOCALAPPDATA")
+    if not root:
+        root = str(Path.home())
+    return Path(root)
+
+
+def localappdata_root() -> Path:
+    if INSTALL_BASE_DIR is not None:
+        return INSTALL_BASE_DIR.parent / "LegacyLocalAppData"
+
     root = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA")
     if not root:
         root = str(Path.home())
-    return Path(root) / APP_NAME
+    return Path(root)
+
+
+def excel_root() -> Path:
+    return appdata_root() / "Microsoft" / "Excel"
+
+
+def local_cache_root() -> Path:
+    return excel_root() / "LocalCache"
+
+
+def xlstart_dir() -> Path:
+    return excel_root() / "XLSTART"
 
 
 def addin_dir() -> Path:
@@ -54,6 +84,10 @@ def legacy_loader_dir() -> Path:
 
 def legacy_versions_dir() -> Path:
     return base_dir() / "versions"
+
+
+def legacy_local_vzid_dir() -> Path:
+    return localappdata_root() / APP_NAME
 
 
 def config_dir() -> Path:
@@ -121,22 +155,44 @@ def clear_prepared_updates() -> None:
 
 
 def cleanup_legacy_layout() -> None:
-    legacy_files = [
+    for legacy_file in legacy_file_candidates():
+        cleanup_file(legacy_file)
+
+    for pending_root in (
+        legacy_versions_dir() / "pending",
+        legacy_local_vzid_dir() / "versions" / "pending",
+    ):
+        for pending_file in pending_root.glob("MainVZID*.xlam"):
+            cleanup_file(pending_file)
+
+
+def legacy_file_candidates() -> list[Path]:
+    candidates = [
         legacy_loader_dir() / LEGACY_LOADER_FILE,
         legacy_versions_dir() / "current" / MAIN_FILE,
+        legacy_local_vzid_dir() / "loader" / LEGACY_LOADER_FILE,
+        legacy_local_vzid_dir() / "versions" / "current" / MAIN_FILE,
+        legacy_local_vzid_dir() / "addin" / MAIN_FILE,
+        local_cache_root() / MAIN_FILE,
+        local_cache_root() / APP_NAME / MAIN_FILE,
+        local_cache_root() / APP_NAME / "addin" / MAIN_FILE,
+        xlstart_dir() / LEGACY_LOADER_FILE,
+        xlstart_dir() / MAIN_FILE,
     ]
+    return candidates
 
-    for legacy_file in legacy_files:
-        try:
-            legacy_file.unlink()
-        except FileNotFoundError:
-            pass
 
-    for pending_file in (legacy_versions_dir() / "pending").glob("MainVZID*.xlam"):
-        try:
-            pending_file.unlink()
-        except FileNotFoundError:
-            pass
+def cleanup_file(path: Path) -> None:
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        return
+
+
+def cleanup_excel_registration(excel_version: str) -> None:
+    disconnect_legacy_addins()
+    remove_startup_entries_from_registry(excel_version)
+    remove_addin_manager_entries(excel_version)
 
 
 def sync_config() -> None:
@@ -174,13 +230,7 @@ def copy_assets() -> None:
         shutil.copy2(config_template_path(), config_path())
 
     clear_prepared_updates()
-    cleanup_legacy_layout()
     sync_config()
-
-
-def register_main_addin() -> None:
-    version = detect_excel_version()
-    register_main_addin_in_registry(version, main_path())
 
 
 def detect_excel_version() -> str:
@@ -198,12 +248,34 @@ def detect_excel_version() -> str:
 def register_main_addin_in_registry(excel_version: str, addin_path: Path) -> None:
     options_key_path = f"Software\\Microsoft\\Office\\{excel_version}\\Excel\\Options"
     value_to_store = f'"{addin_path.resolve()}"'
+    preserved_values = read_preserved_startup_entries(excel_version)
 
     with winreg.CreateKey(winreg.HKEY_CURRENT_USER, options_key_path) as key:
-        existing_values: list[str] = []
-        existing_names: list[str] = []
-        index = 0
+        clear_startup_registry_values(key)
+        preserved_values.append(value_to_store)
 
+        for index, current_value in enumerate(preserved_values):
+            value_name = "OPEN" if index == 0 else f"OPEN{index}"
+            winreg.SetValueEx(key, value_name, 0, winreg.REG_SZ, current_value)
+
+
+def remove_startup_entries_from_registry(excel_version: str) -> None:
+    options_key_path = f"Software\\Microsoft\\Office\\{excel_version}\\Excel\\Options"
+    preserved_values = read_preserved_startup_entries(excel_version)
+
+    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, options_key_path) as key:
+        clear_startup_registry_values(key)
+        for index, current_value in enumerate(preserved_values):
+            value_name = "OPEN" if index == 0 else f"OPEN{index}"
+            winreg.SetValueEx(key, value_name, 0, winreg.REG_SZ, current_value)
+
+
+def read_preserved_startup_entries(excel_version: str) -> list[str]:
+    options_key_path = f"Software\\Microsoft\\Office\\{excel_version}\\Excel\\Options"
+    preserved_values: list[str] = []
+
+    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, options_key_path) as key:
+        index = 0
         while index < 64:
             value_name = "OPEN" if index == 0 else f"OPEN{index}"
             try:
@@ -212,28 +284,78 @@ def register_main_addin_in_registry(excel_version: str, addin_path: Path) -> Non
                 index += 1
                 continue
 
-            existing_names.append(value_name)
-            existing_values.append(str(current_value))
+            if startup_entry_basename(str(current_value)) not in STARTUP_FILE_NAMES:
+                preserved_values.append(str(current_value))
             index += 1
 
-        for value_name in existing_names:
-            try:
-                winreg.DeleteValue(key, value_name)
-            except FileNotFoundError:
-                pass
+    return preserved_values
 
-        preserved_values = []
-        for current_value in existing_values:
-            candidate_name = startup_entry_basename(current_value)
-            if candidate_name in {LEGACY_LOADER_FILE.lower(), MAIN_FILE.lower()}:
+
+def clear_startup_registry_values(key) -> None:
+    index = 0
+    while index < 64:
+        value_name = "OPEN" if index == 0 else f"OPEN{index}"
+        try:
+            winreg.DeleteValue(key, value_name)
+        except FileNotFoundError:
+            pass
+        index += 1
+
+
+def remove_addin_manager_entries(excel_version: str) -> None:
+    key_path = f"Software\\Microsoft\\Office\\{excel_version}\\Excel\\Add-in Manager"
+
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ | winreg.KEY_WRITE) as key:
+            value_names: list[str] = []
+            value_index = 0
+            while True:
+                try:
+                    value_name, _, _ = winreg.EnumValue(key, value_index)
+                except OSError:
+                    break
+                value_names.append(value_name)
+                value_index += 1
+
+            for value_name in value_names:
+                if startup_entry_basename(value_name) in STARTUP_FILE_NAMES:
+                    try:
+                        winreg.DeleteValue(key, value_name)
+                    except FileNotFoundError:
+                        pass
+    except FileNotFoundError:
+        return
+
+
+def disconnect_legacy_addins() -> None:
+    pythoncom.CoInitialize()
+    excel = None
+    try:
+        excel = win32com.client.DispatchEx("Excel.Application")
+        excel.Visible = False
+        excel.DisplayAlerts = False
+
+        workbook_count = excel.Workbooks.Count
+        for index in range(workbook_count, 0, -1):
+            workbook = excel.Workbooks(index)
+            if Path(str(workbook.FullName)).name.lower() in STARTUP_FILE_NAMES:
+                workbook.Close(False)
+
+        addin_count = excel.AddIns.Count
+        for index in range(1, addin_count + 1):
+            addin_ref = excel.AddIns(index)
+            addin_name = Path(str(addin_ref.FullName or addin_ref.Name)).name.lower()
+            if addin_name not in STARTUP_FILE_NAMES:
                 continue
-            preserved_values.append(current_value)
-
-        preserved_values.append(value_to_store)
-
-        for index, current_value in enumerate(preserved_values):
-            value_name = "OPEN" if index == 0 else f"OPEN{index}"
-            winreg.SetValueEx(key, value_name, 0, winreg.REG_SZ, current_value)
+            try:
+                if addin_ref.Installed:
+                    addin_ref.Installed = False
+            except Exception:
+                pass
+    finally:
+        if excel is not None:
+            excel.Quit()
+        pythoncom.CoUninitialize()
 
 
 def startup_entry_basename(value: str) -> str:
@@ -289,10 +411,16 @@ def main() -> int:
         INSTALL_BASE_DIR = Path(args.target_root).resolve()
 
     try:
+        excel_version = ""
+        if not args.skip_register:
+            excel_version = detect_excel_version()
+            cleanup_excel_registration(excel_version)
+
         ensure_dirs()
+        cleanup_legacy_layout()
         copy_assets()
         if not args.skip_register:
-            register_main_addin()
+            register_main_addin_in_registry(excel_version, main_path())
 
         show_info(
             "VZID Setup",

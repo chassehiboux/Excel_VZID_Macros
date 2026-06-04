@@ -7,7 +7,7 @@
 Главное правило:
 
 - исходник надстройки лежит в репозитории;
-- итоговый `.xlam` в `build/` или в `%LocalAppData%\VZID\addin\` не считается исходником.
+- итоговый `.xlam` в `build/` или в `%AppData%\Microsoft\Excel\LocalCache\VZID\addin\` не считается исходником.
 
 ## Где что править
 

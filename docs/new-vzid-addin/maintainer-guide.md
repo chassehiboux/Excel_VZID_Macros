@@ -12,7 +12,7 @@
 - формы: `src/main-vzid/forms/`
 - права по логинам: `config/config.template.json` и `AccessPolicy.bas`
 
-Собранный `MainVZID.xlam` в `build/` или установленный в `%LocalAppData%\VZID\addin\` больше не надо считать исходником. Это только результат сборки.
+Собранный `MainVZID.xlam` в `build/` или установленный в `%AppData%\Microsoft\Excel\LocalCache\VZID\addin\` больше не надо считать исходником. Это только результат сборки.
 
 ## Как теперь правильно мыслить
 
@@ -231,7 +231,7 @@ Case "MANUAL_PROC_REPORT"
 3. Нажми `File -> Open`.
 4. Выбери файл:
    - для локальной проверки: `build_manual_check/MainVZID.xlam`
-   - для проверки установленной надстройки: `%LocalAppData%\VZID\addin\MainVZID.xlam`
+   - для проверки установленной надстройки: `%AppData%\Microsoft\Excel\LocalCache\VZID\addin\MainVZID.xlam`
 5. В левой панели найди `customUI/customUI14.xml`.
 6. Открой его.
 
@@ -301,7 +301,7 @@ Case "MANUAL_PROC_REPORT"
 
 ### Чего не надо делать
 
-- не редактируй установленный `%LocalAppData%\VZID\addin\MainVZID.xlam` как основной исходник;
+- не редактируй установленный `%AppData%\Microsoft\Excel\LocalCache\VZID\addin\MainVZID.xlam` как основной исходник;
 - не редактируй `build/MainVZID.xlam` как основной исходник;
 - не пытайся жить в логике “один рабочий xlam, из него потом все вытолкну”.
 

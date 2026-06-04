@@ -20,9 +20,9 @@ End Sub
 
 Public Function MainConfig_BaseDir() As String
     Dim rootPath As String
-    rootPath = Environ$("LOCALAPPDATA")
-    If LenB(rootPath) = 0 Then rootPath = Environ$("APPDATA")
-    MainConfig_BaseDir = rootPath & "\" & VZID_APP_NAME & "\"
+    rootPath = Environ$("APPDATA")
+    If LenB(rootPath) = 0 Then rootPath = Environ$("LOCALAPPDATA")
+    MainConfig_BaseDir = rootPath & "\Microsoft\Excel\LocalCache\" & VZID_APP_NAME & "\"
 End Function
 
 Public Function MainConfig_AddinDir() As String

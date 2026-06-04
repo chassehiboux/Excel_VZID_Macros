@@ -49,7 +49,7 @@
   через GitHub Releases как основной путь и через локальный файл как резервный путь.
 - Команды без доступа должны быть видимы, но неактивны.
 - Правила доступа на старте хранятся прямо в конфиге надстройки.
-- Конфиг надстройки должен храниться в `%LocalAppData%\VZID\config\config.json`.
+- Конфиг надстройки должен храниться в `%AppData%\Microsoft\Excel\LocalCache\VZID\config\config.json`.
 - В качестве базовой схемы принимаем одну рабочую Excel-надстройку `MainVZID.xlam` без отдельного постоянного `Loader`.
 - `MainVZID.xlam` должен подключаться к Excel как обычная пользовательская надстройка.
 - Обновление должен выполнять отдельный `updater.exe`, который ставится вместе с `setup.exe`, запускается только по явному сценарию обновления и может ждать полного закрытия Excel в фоне.
@@ -239,12 +239,12 @@
 
 Рекомендуемые папки:
 
-- `%LocalAppData%\VZID\addin\`
-- `%LocalAppData%\VZID\updater\`
-- `%LocalAppData%\VZID\updates\`
-- `%LocalAppData%\VZID\backup\`
-- `%LocalAppData%\VZID\config\`
-- `%LocalAppData%\VZID\logs\`
+- `%AppData%\Microsoft\Excel\LocalCache\VZID\addin\`
+- `%AppData%\Microsoft\Excel\LocalCache\VZID\updater\`
+- `%AppData%\Microsoft\Excel\LocalCache\VZID\updates\`
+- `%AppData%\Microsoft\Excel\LocalCache\VZID\backup\`
+- `%AppData%\Microsoft\Excel\LocalCache\VZID\config\`
+- `%AppData%\Microsoft\Excel\LocalCache\VZID\logs\`
 
 ## Что важно предусмотреть заранее
 
