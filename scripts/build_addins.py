@@ -38,6 +38,7 @@ def import_components(vb_project, source_dir: Path) -> None:
             import_text_component(vb_project, path)
 
     for path in sorted(source_dir.glob("*.frm")):
+        validate_form_dependencies(path)
         vb_project.VBComponents.Import(str(path))
 
 
@@ -84,6 +85,26 @@ def remove_attribute_block(source_text: str) -> str:
         break
 
     return "\n".join(lines[body_start:])
+
+
+def validate_form_dependencies(form_path: Path) -> None:
+    form_text = form_path.read_text(encoding="utf-8")
+    frx_path = form_path.with_suffix(".frx")
+
+    if not form_references_frx(form_text):
+        return
+
+    if frx_path.exists():
+        return
+
+    raise FileNotFoundError(
+        f"UserForm {form_path.name} references {frx_path.name}, but the .frx file is missing. "
+        "Export and commit both files together."
+    )
+
+
+def form_references_frx(form_text: str) -> bool:
+    return ".frx\":" in form_text.lower()
 
 
 def replace_thisworkbook_code(workbook, vb_project, workbook_code_path: Path) -> None:
