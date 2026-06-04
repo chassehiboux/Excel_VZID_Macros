@@ -41,6 +41,10 @@ Public Sub RibbonVZID_GetCommandVisible(ByVal control As IRibbonControl, ByRef r
     returnedVal = CommandRegistry_IsVisible(control.Tag, RegionState_SelectedId())
 End Sub
 
+Public Sub RibbonVZID_GetTmnLayoutVisible(ByVal control As IRibbonControl, ByRef returnedVal)
+    returnedVal = (StrComp(RegionState_SelectedId(), "TMN", vbTextCompare) = 0)
+End Sub
+
 Public Sub RibbonVZID_GetUpdateStatusLabel(ByVal control As IRibbonControl, ByRef returnedVal)
     returnedVal = UpdateStatus_RibbonText()
 End Sub
