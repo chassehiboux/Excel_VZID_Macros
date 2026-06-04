@@ -4,6 +4,7 @@ import os
 import shutil
 import sys
 import argparse
+import winreg
 from pathlib import Path
 from tkinter import Tk, messagebox
 
@@ -90,29 +91,48 @@ def copy_assets() -> None:
 
 
 def register_loader_addin() -> None:
+    version = detect_excel_version()
+    register_loader_addin_in_registry(version, loader_path())
+
+
+def detect_excel_version() -> str:
     pythoncom.CoInitialize()
     excel = None
     try:
         excel = win32com.client.DispatchEx("Excel.Application")
-        excel.Visible = False
-        excel.DisplayAlerts = False
-
-        addin_ref = None
-        target_path = str(loader_path()).lower()
-        for index in range(1, excel.AddIns.Count + 1):
-            candidate = excel.AddIns.Item(index)
-            if str(candidate.FullName).lower() == target_path:
-                addin_ref = candidate
-                break
-
-        if addin_ref is None:
-            addin_ref = excel.AddIns.Add(str(loader_path()), False)
-
-        addin_ref.Installed = True
+        return str(excel.Version)
     finally:
         if excel is not None:
             excel.Quit()
         pythoncom.CoUninitialize()
+
+
+def register_loader_addin_in_registry(excel_version: str, addin_path: Path) -> None:
+    options_key_path = f"Software\\Microsoft\\Office\\{excel_version}\\Excel\\Options"
+    normalized_target = str(addin_path.resolve()).lower()
+    value_to_store = f'"{addin_path.resolve()}"'
+
+    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, options_key_path) as key:
+        existing_name = None
+        next_free_name = "OPEN"
+        index = 0
+
+        while True:
+            value_name = "OPEN" if index == 0 else f"OPEN{index}"
+            try:
+                current_value, _ = winreg.QueryValueEx(key, value_name)
+            except FileNotFoundError:
+                next_free_name = value_name
+                break
+
+            normalized_value = str(current_value).strip().strip('"').lower()
+            if normalized_value == normalized_target:
+                existing_name = value_name
+                break
+
+            index += 1
+
+        winreg.SetValueEx(key, existing_name or next_free_name, 0, winreg.REG_SZ, value_to_store)
 
 
 def show_info(title: str, text: str) -> None:
