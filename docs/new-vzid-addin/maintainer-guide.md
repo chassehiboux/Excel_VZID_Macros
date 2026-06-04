@@ -46,7 +46,8 @@
 
 - вкладка `VZID`;
 - dropdown выбора региона;
-- блок кнопок команд;
+- блок `Формирование сопроводительных документов`;
+- блок `Действия`;
 - блок обновления.
 
 ### Что за что отвечает
@@ -80,7 +81,8 @@
   label="Ручной отчет"
   tag="MANUAL_PROC_REPORT"
   onAction="RibbonVZID_RunCommand"
-  getEnabled="RibbonVZID_GetCommandEnabled" />
+  getEnabled="RibbonVZID_GetCommandEnabled"
+  getVisible="RibbonVZID_GetCommandVisible" />
 ```
 
 Что здесь значит:
@@ -95,6 +97,8 @@
   значит: нажимать будем через общий роутер;
 - `getEnabled="RibbonVZID_GetCommandEnabled"`
   значит: Excel будет спрашивать, активна кнопка или нет.
+- `getVisible="RibbonVZID_GetCommandVisible"`
+  значит: Excel будет спрашивать, должна ли кнопка вообще показываться для выбранного региона.
 
 ### Шаг 2. Привяжи кнопку к макросу
 
@@ -108,13 +112,14 @@
 Case "MANUAL_PROC_REPORT"
     Select Case UCase$(regionId)
         Case "KGN"
-            CommandRegistry_GetMacroName = "ManualProcReport"
+            CommandRegistry_GetMacroName = "CommandHandlers_ShowManualProcReportKGN"
     End Select
 ```
 
 Что это значит:
 
 - если выбран регион `KGN`, то кнопка с `tag="MANUAL_PROC_REPORT"` запускает макрос `ManualProcReport`;
+- если выбран регион `KGN`, то кнопка с `tag="MANUAL_PROC_REPORT"` запускает обертку `CommandHandlers_ShowManualProcReportKGN`, а уже она открывает нужную форму;
 - если для другого региона запись не добавлена, кнопка там будет неактивной.
 
 ## Как назначить макрос на кнопку
@@ -132,7 +137,7 @@ Case "MANUAL_PROC_REPORT"
 #### В XML
 
 ```xml
-<button id="btnDocPackets" label="Пакеты" tag="DOC_PACKETS" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" />
+<button id="btnDocPackets" label="Реестр пакетов в Excel" tag="DOC_PACKETS" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" getVisible="RibbonVZID_GetCommandVisible" />
 ```
 
 #### В `CommandRegistry.bas`
@@ -140,7 +145,7 @@ Case "MANUAL_PROC_REPORT"
 ```vb
 Case "DOC_PACKETS"
     Select Case UCase$(regionId)
-        Case "KGN", "TMN", "EKB"
+        Case "KGN", "TMN", "EKB", "CHLB"
             CommandRegistry_GetMacroName = "Doc_Packets"
     End Select
 ```
@@ -178,12 +183,13 @@ Case "MANUAL_PROC_REPORT"
 Пример:
 
 ```json
-"commandAccessManualProcReportCsv": "dzuikevich"
+"commandAccessManualProcReportCsv": "*"
 ```
 
 Что это значит:
 
-- только пользователь Windows с логином `dzuikevich` сможет нажимать кнопку.
+- кнопку сможет нажимать любой пользователь;
+- если нужен узкий доступ, вместо `*` ставишь один логин или список логинов через `;`.
 
 ### Как задаются права
 
@@ -201,6 +207,11 @@ Case "MANUAL_PROC_REPORT"
 - кнопка не скрывается, а именно показывается серой.
 
 Это соответствует твоему требованию: показывать, но делать неактивными.
+
+Отдельное правило для Тюмени:
+
+- кнопки `Выбрать ОСП и Адрес` и `Горячая клавиша` видны только в регионе `Тюмень`;
+- в остальных регионах они полностью скрыты, а не просто серые.
 
 ## Как пользоваться Office RibbonX Editor
 
@@ -252,6 +263,13 @@ Case "MANUAL_PROC_REPORT"
 
 - редактирование: в репозитории;
 - инспекция: в RibbonX Editor.
+
+## Что важно про формы и кодировку
+
+- старые VBA-экспорты модулей и форм могут быть в `cp1251`, это нормально;
+- новые служебные файлы проекта лучше держать в `UTF-8`;
+- `.frm` и `.frx` всегда кладутся парой;
+- старые формы `frmVZID_KGN`, `frmVZID_TMN`, `frmVZID_EKB`, `frmVZID_CHLB` не импортируются в новый `MainVZID.xlam`, потому что их роль теперь выполняет вкладка ленты.
 
 ## Как правильно дорабатывать надстройку сейчас
 

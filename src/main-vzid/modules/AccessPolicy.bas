@@ -7,8 +7,11 @@ End Function
 
 Public Function AccessPolicy_IsCommandEnabled(ByVal commandId As String) As Boolean
     Dim regionId As String
+    Dim commandKey As String
+
     regionId = RegionState_SelectedId()
 
+    If Not CommandRegistry_IsVisible(commandId, regionId) Then Exit Function
     If Not CommandRegistry_IsSupported(commandId, regionId) Then Exit Function
 
     If AccessPolicy_HasFullAccess() Then
@@ -16,7 +19,12 @@ Public Function AccessPolicy_IsCommandEnabled(ByVal commandId As String) As Bool
         Exit Function
     End If
 
-    AccessPolicy_IsCommandEnabled = AccessPolicy_UserInCsv(MainConfig_ReadValue(AccessPolicy_CommandKey(commandId), ""), AccessPolicy_CurrentUser())
+    commandKey = AccessPolicy_CommandKey(commandId)
+    If LenB(commandKey) = 0 Then Exit Function
+
+    AccessPolicy_IsCommandEnabled = AccessPolicy_UserInCsv( _
+        MainConfig_ReadValue(commandKey, AccessPolicy_CommandDefaultCsv(commandId)), _
+        AccessPolicy_CurrentUser())
 End Function
 
 Private Function AccessPolicy_HasFullAccess() As Boolean
@@ -31,8 +39,33 @@ Private Function AccessPolicy_CommandKey(ByVal commandId As String) As String
             AccessPolicy_CommandKey = "commandAccessMakeCoverLettersCsv"
         Case "MAKE_COVER_LETTERS_BY_RECIPIENT"
             AccessPolicy_CommandKey = "commandAccessMakeCoverLettersByRecipientCsv"
-        Case "RIC_ZAKAZNYE_CREATE"
-            AccessPolicy_CommandKey = "commandAccessRicZakaznyeCreateCsv"
+        Case "ZAKAZNYE_CREATE"
+            AccessPolicy_CommandKey = "commandAccessZakaznyeCreateCsv"
+        Case "MANUAL_PROC_REPORT"
+            AccessPolicy_CommandKey = "commandAccessManualProcReportCsv"
+        Case "PDF_SIGNER"
+            AccessPolicy_CommandKey = "commandAccessPdfSignerCsv"
+        Case "PDF_SCANNER"
+            AccessPolicy_CommandKey = "commandAccessPdfScannerCsv"
+        Case "OSP_SELECT"
+            AccessPolicy_CommandKey = "commandAccessOspSelectCsv"
+        Case "HOTKEY_SETUP"
+            AccessPolicy_CommandKey = "commandAccessHotkeySetupCsv"
+    End Select
+End Function
+
+Private Function AccessPolicy_CommandDefaultCsv(ByVal commandId As String) As String
+    Select Case UCase$(commandId)
+        Case "DOC_PACKETS", _
+             "MAKE_COVER_LETTERS", _
+             "MAKE_COVER_LETTERS_BY_RECIPIENT", _
+             "ZAKAZNYE_CREATE", _
+             "MANUAL_PROC_REPORT", _
+             "PDF_SIGNER", _
+             "PDF_SCANNER", _
+             "OSP_SELECT", _
+             "HOTKEY_SETUP"
+            AccessPolicy_CommandDefaultCsv = "*"
     End Select
 End Function
 

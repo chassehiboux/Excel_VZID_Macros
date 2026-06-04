@@ -64,6 +64,7 @@ def main() -> int:
         payload["minLoaderVersion"] = min_loader_version
         payload["minUpdaterVersion"] = min_updater_version
         payload["mainDownloadUrl"] = f"https://github.com/chassehiboux/Excel_VZID_Macros/releases/download/v{version}/MainVZID.xlam"
+        payload["setupDownloadUrl"] = f"https://github.com/chassehiboux/Excel_VZID_Macros/releases/download/v{version}/setup.exe"
         payload["notesUrl"] = f"https://github.com/chassehiboux/Excel_VZID_Macros/releases/tag/v{version}"
 
     update_json_file(ROOT / "release" / "manifest.template.json", update_manifest)

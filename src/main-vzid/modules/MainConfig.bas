@@ -69,8 +69,12 @@ Public Function MainConfig_PreparedMainPathForVersion(ByVal versionText As Strin
     MainConfig_PreparedMainPathForVersion = MainConfig_UpdatesDir() & "MainVZID-" & MainConfig_SanitizeFileToken(versionText) & ".xlam"
 End Function
 
+Public Function MainConfig_PreparedSetupPathForVersion(ByVal versionText As String) As String
+    MainConfig_PreparedSetupPathForVersion = MainConfig_UpdatesDir() & "setup-" & MainConfig_SanitizeFileToken(versionText) & ".exe"
+End Function
+
 Public Function MainConfig_DefaultJsonText() As String
-    MainConfig_DefaultJsonText = Join(Array( _
+    MainConfig_DefaultJsonText = MainConfig_JoinLines( _
         "{", _
         "  ""schemaVersion"": ""2"",", _
         "  ""repoUrl"": ""https://github.com/chassehiboux/Excel_VZID_Macros"",", _
@@ -79,7 +83,9 @@ Public Function MainConfig_DefaultJsonText() As String
         "  ""activeMainVersion"": """ & VZID_MAIN_VERSION & """,", _
         "  ""activeUpdaterVersion"": """ & VZID_UPDATER_VERSION & """,", _
         "  ""availableMainVersion"": """",", _
-        "  ""availableMainDownloadUrl"": """",", _
+        "  ""availableMainDownloadUrl"": """"," _
+    )
+    MainConfig_DefaultJsonText = MainConfig_DefaultJsonText & vbCrLf & MainConfig_JoinLines( _
         "  ""preparedMainVersion"": """",", _
         "  ""preparedMainPath"": """",", _
         "  ""lastUpdateCheckAt"": """",", _
@@ -87,10 +93,18 @@ Public Function MainConfig_DefaultJsonText() As String
         "  ""lastUpdateMessage"": ""Проверка обновлений еще не выполнялась."",", _
         "  ""fullAccessUsersCsv"": ""dzuikevich"",", _
         "  ""commandAccessDocPacketsCsv"": ""*"",", _
-        "  ""commandAccessMakeCoverLettersCsv"": ""dzuikevich"",", _
-        "  ""commandAccessMakeCoverLettersByRecipientCsv"": ""dzuikevich"",", _
-        "  ""commandAccessRicZakaznyeCreateCsv"": ""dzuikevich""", _
-        "}"), vbCrLf)
+        "  ""commandAccessMakeCoverLettersCsv"": ""*"",", _
+        "  ""commandAccessMakeCoverLettersByRecipientCsv"": ""*""," _
+    )
+    MainConfig_DefaultJsonText = MainConfig_DefaultJsonText & vbCrLf & MainConfig_JoinLines( _
+        "  ""commandAccessZakaznyeCreateCsv"": ""*"",", _
+        "  ""commandAccessManualProcReportCsv"": ""*"",", _
+        "  ""commandAccessPdfSignerCsv"": ""*"",", _
+        "  ""commandAccessPdfScannerCsv"": ""*"",", _
+        "  ""commandAccessOspSelectCsv"": ""*"",", _
+        "  ""commandAccessHotkeySetupCsv"": ""*""", _
+        "}" _
+    )
 End Function
 
 Public Function MainConfig_LoadText() As String
@@ -242,6 +256,17 @@ Private Function MainConfig_EscapeJsonString(ByVal value As String) As String
     escaped = Replace(value, "\", "\\")
     escaped = Replace(escaped, """", "'")
     MainConfig_EscapeJsonString = escaped
+End Function
+
+Private Function MainConfig_JoinLines(ParamArray values() As Variant) As String
+    Dim index As Long
+
+    For index = LBound(values) To UBound(values)
+        If index > LBound(values) Then
+            MainConfig_JoinLines = MainConfig_JoinLines & vbCrLf
+        End If
+        MainConfig_JoinLines = MainConfig_JoinLines & CStr(values(index))
+    Next index
 End Function
 
 Private Sub MainConfig_EnsureFolder(ByVal fullPath As String)

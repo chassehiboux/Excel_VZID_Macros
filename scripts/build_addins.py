@@ -27,6 +27,13 @@ ET.register_namespace("", RELS_NS)
 VBEXT_CT_STD_MODULE = 1
 VBEXT_CT_CLASS_MODULE = 2
 VB_NAME_PATTERN = re.compile(r'^Attribute VB_Name = "([^"]+)"$', re.MULTILINE)
+SOURCE_TEXT_ENCODINGS = ("utf-8", "cp1251")
+SKIPPED_FORM_NAMES = {
+    "frmVZID_KGN.frm",
+    "frmVZID_TMN.frm",
+    "frmVZID_EKB.frm",
+    "frmVZID_CHLB.frm",
+}
 
 
 def import_components(vb_project, source_dir: Path) -> None:
@@ -38,12 +45,18 @@ def import_components(vb_project, source_dir: Path) -> None:
             import_text_component(vb_project, path)
 
     for path in sorted(source_dir.glob("*.frm")):
+        if path.name in SKIPPED_FORM_NAMES:
+            continue
         validate_form_dependencies(path)
         vb_project.VBComponents.Import(str(path))
 
 
 def import_text_component(vb_project, source_path: Path) -> None:
-    source_text = source_path.read_text(encoding="utf-8")
+    source_text, source_encoding = read_source_text_with_encoding(source_path)
+    if source_encoding != "utf-8":
+        vb_project.VBComponents.Import(str(source_path))
+        return
+
     component_name = extract_vb_name(source_text, source_path)
     component_type = component_type_for_path(source_path)
     module_text = remove_attribute_block(source_text)
@@ -88,7 +101,7 @@ def remove_attribute_block(source_text: str) -> str:
 
 
 def validate_form_dependencies(form_path: Path) -> None:
-    form_text = form_path.read_text(encoding="utf-8")
+    form_text = read_source_text(form_path)
     frx_path = form_path.with_suffix(".frx")
 
     if not form_references_frx(form_text):
@@ -111,7 +124,27 @@ def replace_thisworkbook_code(workbook, vb_project, workbook_code_path: Path) ->
     code_module = vb_project.VBComponents(workbook.CodeName).CodeModule
     if code_module.CountOfLines:
         code_module.DeleteLines(1, code_module.CountOfLines)
-    code_module.AddFromString(workbook_code_path.read_text(encoding="utf-8"))
+    code_module.AddFromString(read_source_text(workbook_code_path))
+
+
+def read_source_text(source_path: Path) -> str:
+    return read_source_text_with_encoding(source_path)[0]
+
+
+def read_source_text_with_encoding(source_path: Path) -> tuple[str, str]:
+    source_bytes = source_path.read_bytes()
+    for encoding in SOURCE_TEXT_ENCODINGS:
+        try:
+            return source_bytes.decode(encoding), encoding
+        except UnicodeDecodeError:
+            continue
+    raise UnicodeDecodeError(
+        "unknown",
+        source_bytes,
+        0,
+        len(source_bytes),
+        f"Unable to decode {source_path} as UTF-8 or CP1251",
+    )
 
 
 def create_addin(source_root: Path, output_path: Path) -> None:

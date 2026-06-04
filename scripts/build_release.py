@@ -36,6 +36,7 @@ def main() -> int:
 
     run_script("build_addins.py", "--output-dir", str(build_dir))
     run_script("build_updater.py", "--dist-dir", str(build_dir))
+    run_script("build_setup.py", "--dist-dir", str(release_dir))
     run_script(
         "generate_manifest.py",
         "--version",
@@ -44,10 +45,11 @@ def main() -> int:
         min_loader_version,
         "--min-updater-version",
         min_updater_version,
+        "--setup-exe",
+        str(release_dir / "setup.exe"),
         "--output",
         str(release_dir / "manifest.json"),
     )
-    run_script("build_setup.py", "--dist-dir", str(release_dir))
 
     shutil.copy2(build_dir / "MainVZID.xlam", release_dir / "MainVZID.xlam")
 

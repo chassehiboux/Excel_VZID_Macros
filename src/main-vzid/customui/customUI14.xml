@@ -6,18 +6,25 @@
           <dropDown
             id="ddRegion"
             label="Регион"
-            sizeString="Сопроводительные по получателю"
+            sizeString="Извлечение постановлений из PDF"
             getItemCount="RibbonVZID_GetRegionCount"
             getItemID="RibbonVZID_GetRegionId"
             getItemLabel="RibbonVZID_GetRegionLabel"
             getSelectedItemIndex="RibbonVZID_GetSelectedRegionIndex"
             onAction="RibbonVZID_OnRegionChanged" />
         </group>
-        <group id="grpCommands" label="Команды">
-          <button id="btnDocPackets" label="Пакеты" tag="DOC_PACKETS" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" />
-          <button id="btnMakeCoverLetters" label="Сопроводительные" tag="MAKE_COVER_LETTERS" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" />
-          <button id="btnMakeCoverLettersByRecipient" label="Сопроводительные по получателю" tag="MAKE_COVER_LETTERS_BY_RECIPIENT" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" />
-          <button id="btnRicZakaznyeCreate" label="Заказные" tag="RIC_ZAKAZNYE_CREATE" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" />
+        <group id="grpDocuments" label="Формирование сопроводительных документов">
+          <button id="btnDocPackets" label="Реестр пакетов в Excel" tag="DOC_PACKETS" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" getVisible="RibbonVZID_GetCommandVisible" />
+          <button id="btnMakeCoverLettersByRecipient" label="1 сопровод для WSS" tag="MAKE_COVER_LETTERS_BY_RECIPIENT" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" getVisible="RibbonVZID_GetCommandVisible" />
+          <button id="btnMakeCoverLetters" label="Итоговые сопроводы" tag="MAKE_COVER_LETTERS" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" getVisible="RibbonVZID_GetCommandVisible" />
+          <button id="btnZakaznyeCreate" label="Заказной реестр" tag="ZAKAZNYE_CREATE" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" getVisible="RibbonVZID_GetCommandVisible" />
+        </group>
+        <group id="grpActions" label="Действия">
+          <button id="btnManualProcReport" label="Отчет ручной обработки" tag="MANUAL_PROC_REPORT" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" getVisible="RibbonVZID_GetCommandVisible" />
+          <button id="btnPdfSigner" label="Подпись уведомлений/заявлений" tag="PDF_SIGNER" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" getVisible="RibbonVZID_GetCommandVisible" />
+          <button id="btnPdfScanner" label="Извлечение постановлений из PDF" tag="PDF_SCANNER" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" getVisible="RibbonVZID_GetCommandVisible" />
+          <button id="btnOspSelect" label="Выбрать ОСП и Адрес" tag="OSP_SELECT" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" getVisible="RibbonVZID_GetCommandVisible" />
+          <button id="btnHotkeySetup" label="Горячая клавиша" tag="HOTKEY_SETUP" onAction="RibbonVZID_RunCommand" getEnabled="RibbonVZID_GetCommandEnabled" getVisible="RibbonVZID_GetCommandVisible" />
         </group>
         <group id="grpUpdates" label="Обновление">
           <button id="btnCheckUpdates" label="Проверить обновления" onAction="RibbonVZID_CheckUpdates" />

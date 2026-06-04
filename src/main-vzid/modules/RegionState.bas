@@ -13,7 +13,7 @@ Public Sub RegionState_Initialize()
 End Sub
 
 Public Function RegionState_Count() As Integer
-    RegionState_Count = 3
+    RegionState_Count = 4
 End Function
 
 Public Function RegionState_Label(ByVal index As Integer) As String
@@ -21,6 +21,7 @@ Public Function RegionState_Label(ByVal index As Integer) As String
         Case 0: RegionState_Label = "Курган"
         Case 1: RegionState_Label = "Тюмень"
         Case 2: RegionState_Label = "Екатеринбург"
+        Case 3: RegionState_Label = "ЧЭС"
     End Select
 End Function
 
@@ -29,6 +30,7 @@ Public Function RegionState_Id(ByVal index As Integer) As String
         Case 0: RegionState_Id = "KGN"
         Case 1: RegionState_Id = "TMN"
         Case 2: RegionState_Id = "EKB"
+        Case 3: RegionState_Id = "CHLB"
     End Select
 End Function
 
@@ -60,7 +62,7 @@ End Sub
 
 Public Function RegionState_IsKnown(ByVal regionId As String) As Boolean
     Select Case UCase$(regionId)
-        Case "KGN", "TMN", "EKB"
+        Case "KGN", "TMN", "EKB", "CHLB"
             RegionState_IsKnown = True
     End Select
 End Function

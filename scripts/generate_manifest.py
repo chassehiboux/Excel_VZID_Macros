@@ -28,10 +28,12 @@ def main() -> int:
     parser.add_argument("--min-loader-version", required=True)
     parser.add_argument("--min-updater-version", required=True)
     parser.add_argument("--main-xlam", default=str(ROOT / "build" / "MainVZID.xlam"))
+    parser.add_argument("--setup-exe", default=str(ROOT / "build" / "release" / "setup.exe"))
     parser.add_argument("--output", default=str(ROOT / "build" / "manifest.json"))
     args = parser.parse_args()
 
     main_xlam_path = Path(args.main_xlam).resolve()
+    setup_exe_path = Path(args.setup_exe).resolve()
     output_path = Path(args.output).resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -43,6 +45,8 @@ def main() -> int:
         "minUpdaterVersion": args.min_updater_version,
         "mainDownloadUrl": f"{REPO_URL}/releases/download/v{args.version}/MainVZID.xlam",
         "mainSha256": file_sha256(main_xlam_path),
+        "setupDownloadUrl": f"{REPO_URL}/releases/download/v{args.version}/setup.exe",
+        "setupSha256": file_sha256(setup_exe_path),
         "notesUrl": f"{REPO_URL}/releases/tag/v{args.version}",
     }
 

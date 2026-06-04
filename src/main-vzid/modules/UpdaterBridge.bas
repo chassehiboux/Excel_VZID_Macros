@@ -1,7 +1,7 @@
 Attribute VB_Name = "UpdaterBridge"
 Option Explicit
 
-Public Function UpdaterBridge_StartPreparedUpdate(ByVal sourcePath As String, ByVal releaseVersion As String, ByVal expectedSha256 As String, ByVal restartExcel As Boolean) As Boolean
+Public Function UpdaterBridge_StartPreparedUpdate(ByVal sourcePath As String, ByVal releaseVersion As String, ByVal expectedSha256 As String, ByVal restartExcel As Boolean, Optional ByVal installerMode As Boolean = False) As Boolean
     On Error GoTo failed
 
     If LenB(Dir$(MainConfig_UpdaterExePath())) = 0 Then Exit Function
@@ -15,6 +15,7 @@ Public Function UpdaterBridge_StartPreparedUpdate(ByVal sourcePath As String, By
         " --backup-dir " & UpdaterBridge_Quote(MainConfig_BackupDir()) & _
         " --log " & UpdaterBridge_Quote(MainConfig_LogsDir() & "updater.log") & _
         " --version " & UpdaterBridge_Quote(releaseVersion) & _
+        " --mode " & UpdaterBridge_Quote(IIf(installerMode, "setup", "main")) & _
         " --restart-excel " & CStr(Abs(restartExcel))
 
     If LenB(Trim$(expectedSha256)) > 0 Then

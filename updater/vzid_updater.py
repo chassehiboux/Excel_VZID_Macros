@@ -22,6 +22,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--backup-dir", required=True)
     parser.add_argument("--log", required=True)
     parser.add_argument("--version", required=True)
+    parser.add_argument("--mode", default="main", choices=("main", "setup"))
     parser.add_argument("--expected-sha256", default="")
     parser.add_argument("--restart-excel", default="0")
     parser.add_argument("--skip-wait-for-excel", action="store_true")
@@ -116,7 +117,7 @@ def install_update(args: argparse.Namespace) -> int:
     restart_excel = str(args.restart_excel).strip() in {"1", "true", "True"}
 
     try:
-        write_log(log_path, f"Updater started for {target_path.name}, target version {args.version}.")
+        write_log(log_path, f"Updater started in mode={args.mode} for version {args.version}.")
         if not args.skip_wait_for_excel:
             wait_for_excel_close(log_path)
 
@@ -127,6 +128,14 @@ def install_update(args: argparse.Namespace) -> int:
             actual_sha256 = file_sha256(source_path).lower()
             if actual_sha256 != expected_sha256:
                 raise RuntimeError("Контрольная сумма файла обновления не совпала.")
+
+        if args.mode == "setup":
+            return run_setup_update(
+                source_path=source_path,
+                config_path=config_path,
+                log_path=log_path,
+                restart_excel=restart_excel,
+            )
 
         target_path.parent.mkdir(parents=True, exist_ok=True)
         backup_dir.mkdir(parents=True, exist_ok=True)
@@ -160,6 +169,32 @@ def install_update(args: argparse.Namespace) -> int:
     except Exception as exc:
         update_config_failure(config_path, f"Не удалось применить обновление: {exc}")
         write_log(log_path, f"Обновление завершилось ошибкой: {exc}")
+        return 1
+
+
+def run_setup_update(*, source_path: Path, config_path: Path, log_path: Path, restart_excel: bool) -> int:
+    try:
+        write_log(log_path, f"Запуск setup.exe: {source_path}")
+        result = subprocess.run(
+            [str(source_path), "--no-ui"],
+            check=False,
+            creationflags=CREATE_NO_WINDOW,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"setup.exe завершился с кодом {result.returncode}")
+
+        try:
+            source_path.unlink()
+        except FileNotFoundError:
+            pass
+
+        write_log(log_path, "setup.exe успешно завершил обновление.")
+        if restart_excel:
+            relaunch_excel(log_path)
+        return 0
+    except Exception as exc:
+        update_config_failure(config_path, f"Не удалось применить setup.exe: {exc}")
+        write_log(log_path, f"Ошибка запуска setup.exe: {exc}")
         return 1
 
 
