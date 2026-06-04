@@ -32,6 +32,7 @@ docs/new-vzid-addin/
 installer/
 release/
 config/
+scripts/
 src/vzid-loader/
 src/vzid-loader/modules/
 src/vzid-loader/workbook/
@@ -47,6 +48,12 @@ src/main-vzid/forms/
 ### `installer/`
 
 Содержит описание состава `setup.exe` и правила первой установки без прав администратора.
+
+Технический подход для MVP:
+
+- `setup.exe` собирается через `PyInstaller`;
+- сама логика установки написана на Python;
+- это позволяет собирать продукт без системного setup-компилятора и без прав администратора.
 
 ### `release/`
 

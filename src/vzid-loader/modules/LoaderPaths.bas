@@ -44,6 +44,10 @@ Public Function LoaderPaths_LogPath() As String
     LoaderPaths_LogPath = LoaderPaths_LogsDir() & VZID_LOG_FILE
 End Function
 
+Public Function LoaderPaths_PendingMainPathForVersion(ByVal versionText As String) As String
+    LoaderPaths_PendingMainPathForVersion = LoaderPaths_PendingDir() & "MainVZID-" & LoaderPaths_SanitizeFileToken(versionText) & ".xlam"
+End Function
+
 Public Sub LoaderPaths_EnsureBaseFolders()
     LoaderPaths_EnsureFolder LoaderPaths_BaseDir()
     LoaderPaths_EnsureFolder LoaderPaths_LoaderDir()
@@ -63,3 +67,22 @@ Private Sub LoaderPaths_EnsureFolder(ByVal fullPath As String)
         fso.CreateFolder fullPath
     End If
 End Sub
+
+Private Function LoaderPaths_SanitizeFileToken(ByVal value As String) As String
+    Dim resultText As String
+    Dim index As Long
+    Dim ch As String
+
+    resultText = Trim$(value)
+    If LenB(resultText) = 0 Then resultText = "pending"
+
+    For index = 1 To Len(resultText)
+        ch = Mid$(resultText, index, 1)
+        Select Case ch
+            Case "A" To "Z", "a" To "z", "0" To "9", "-", "_", "."
+                LoaderPaths_SanitizeFileToken = LoaderPaths_SanitizeFileToken & ch
+            Case Else
+                LoaderPaths_SanitizeFileToken = LoaderPaths_SanitizeFileToken & "_"
+        End Select
+    Next index
+End Function

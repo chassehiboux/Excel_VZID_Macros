@@ -3,6 +3,7 @@ Option Explicit
 
 Private Const MAIN_LOADER_WORKBOOK As String = "LoaderVZID.xlam"
 Private Const MAIN_LOADER_CHECK_MACRO As String = "LoaderUpdates_RunManualCheck"
+Private Const MAIN_LOADER_DOWNLOAD_MACRO As String = "LoaderUpdates_RunDownloadAvailableRelease"
 
 Public Sub MainEntryPoint_Initialize()
     MainConfig_EnsureConfig
@@ -22,6 +23,25 @@ failed:
     RibbonVZID_Invalidate
 
     MsgBox "Не удалось запустить проверку обновлений. Убедитесь, что LoaderVZID подключен.", vbExclamation, "VZID"
+End Sub
+
+Public Sub MainEntryPoint_RunDownloadUpdate()
+    On Error GoTo failed
+
+    Application.Run "'" & MAIN_LOADER_WORKBOOK & "'!" & MAIN_LOADER_DOWNLOAD_MACRO
+    RibbonVZID_Invalidate
+
+    If LCase$(MainConfig_ReadValue("lastUpdateStatus", "")) = "downloaded" Then
+        MainEntryPoint_ShowRestartPrompt
+    End If
+    Exit Sub
+
+failed:
+    MainConfig_WriteValue "lastUpdateStatus", "download_failed"
+    MainConfig_WriteValue "lastUpdateMessage", "Не удалось вызвать загрузчик для скачивания обновления."
+    RibbonVZID_Invalidate
+
+    MsgBox "Не удалось скачать обновление. Убедитесь, что LoaderVZID подключен.", vbExclamation, "VZID"
 End Sub
 
 Public Sub MainEntryPoint_InstallUpdateFromFile()

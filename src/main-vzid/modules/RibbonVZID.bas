@@ -45,6 +45,14 @@ Public Sub RibbonVZID_CheckUpdates(ByVal control As IRibbonControl)
     MainEntryPoint_RunCheckUpdates
 End Sub
 
+Public Sub RibbonVZID_DownloadUpdate(ByVal control As IRibbonControl)
+    MainEntryPoint_RunDownloadUpdate
+End Sub
+
+Public Sub RibbonVZID_GetDownloadUpdateEnabled(ByVal control As IRibbonControl, ByRef returnedVal)
+    returnedVal = UpdateStatus_CanDownloadUpdate()
+End Sub
+
 Public Sub RibbonVZID_InstallFromFile(ByVal control As IRibbonControl)
     MainEntryPoint_InstallUpdateFromFile
 End Sub

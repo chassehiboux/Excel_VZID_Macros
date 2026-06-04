@@ -21,6 +21,7 @@
         </group>
         <group id="grpUpdates" label="Обновление">
           <button id="btnCheckUpdates" label="Проверить обновления" onAction="RibbonVZID_CheckUpdates" />
+          <button id="btnDownloadUpdate" label="Обновить" onAction="RibbonVZID_DownloadUpdate" getEnabled="RibbonVZID_GetDownloadUpdateEnabled" />
           <button id="btnInstallFromFile" label="Установить из файла" onAction="RibbonVZID_InstallFromFile" />
           <labelControl id="lblUpdateStatus" getLabel="RibbonVZID_GetUpdateStatusLabel" />
         </group>
