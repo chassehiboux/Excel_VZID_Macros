@@ -15,7 +15,10 @@ ROOT = Path(__file__).resolve().parents[1]
 MAIN_SRC = ROOT / "src" / "main-vzid"
 CONTENT_TYPES_NS = "http://schemas.openxmlformats.org/package/2006/content-types"
 RELS_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
-CUSTOM_UI_REL_TYPE = "http://schemas.microsoft.com/office/2006/relationships/ui/extensibility"
+CUSTOM_UI_REL_TYPE = "http://schemas.microsoft.com/office/2007/relationships/ui/extensibility"
+CUSTOM_UI_PART_NAME = "/customUI/customUI14.xml"
+CUSTOM_UI_TARGET = "/customUI/customUI14.xml"
+CUSTOM_UI_CONTENT_TYPE = "application/xml"
 
 ET.register_namespace("", CONTENT_TYPES_NS)
 ET.register_namespace("", RELS_NS)
@@ -80,44 +83,66 @@ def patch_custom_ui(xlam_path: Path, custom_ui_path: Path) -> None:
         content_tree = ET.parse(content_types_path)
         content_root = content_tree.getroot()
         override_tag = f"{{{CONTENT_TYPES_NS}}}Override"
-        override_exists = any(
-            node.attrib.get("PartName") == "/customUI/customUI14.xml"
-            for node in content_root.findall(override_tag)
-        )
-        if not override_exists:
-            ET.SubElement(
+        content_changed = False
+        override_node = None
+        for node in content_root.findall(override_tag):
+            if node.attrib.get("PartName") == CUSTOM_UI_PART_NAME:
+                override_node = node
+                break
+
+        if override_node is None:
+            override_node = ET.SubElement(
                 content_root,
                 override_tag,
                 {
-                    "PartName": "/customUI/customUI14.xml",
-                    "ContentType": "application/vnd.ms-office.customUI+xml",
+                    "PartName": CUSTOM_UI_PART_NAME,
+                    "ContentType": CUSTOM_UI_CONTENT_TYPE,
                 },
             )
+            content_changed = True
+        elif override_node.attrib.get("ContentType") != CUSTOM_UI_CONTENT_TYPE:
+            override_node.set("ContentType", CUSTOM_UI_CONTENT_TYPE)
+            content_changed = True
+
+        if content_changed:
             content_tree.write(content_types_path, encoding="utf-8", xml_declaration=True)
 
         rels_path = temp_dir / "_rels" / ".rels"
         rels_tree = ET.parse(rels_path)
         rels_root = rels_tree.getroot()
         relationship_tag = f"{{{RELS_NS}}}Relationship"
-        rel_exists = any(
-            node.attrib.get("Type") == CUSTOM_UI_REL_TYPE
-            for node in rels_root.findall(relationship_tag)
-        )
-        if not rel_exists:
-            existing_ids = [node.attrib.get("Id", "") for node in rels_root.findall(relationship_tag)]
+        rel_changed = False
+        custom_ui_rel = None
+        existing_ids = []
+        for node in rels_root.findall(relationship_tag):
+            existing_ids.append(node.attrib.get("Id", ""))
+            if node.attrib.get("Target") in ("customUI/customUI14.xml", CUSTOM_UI_TARGET, CUSTOM_UI_PART_NAME):
+                custom_ui_rel = node
+
+        if custom_ui_rel is None:
             next_index = 1
             while f"rId{next_index}" in existing_ids:
                 next_index += 1
 
-            ET.SubElement(
+            custom_ui_rel = ET.SubElement(
                 rels_root,
                 relationship_tag,
                 {
                     "Id": f"rId{next_index}",
                     "Type": CUSTOM_UI_REL_TYPE,
-                    "Target": "customUI/customUI14.xml",
+                    "Target": CUSTOM_UI_TARGET,
                 },
             )
+            rel_changed = True
+        else:
+            if custom_ui_rel.attrib.get("Type") != CUSTOM_UI_REL_TYPE:
+                custom_ui_rel.set("Type", CUSTOM_UI_REL_TYPE)
+                rel_changed = True
+            if custom_ui_rel.attrib.get("Target") != CUSTOM_UI_TARGET:
+                custom_ui_rel.set("Target", CUSTOM_UI_TARGET)
+                rel_changed = True
+
+        if rel_changed:
             rels_tree.write(rels_path, encoding="utf-8", xml_declaration=True)
 
         rebuilt_path = xlam_path.with_suffix(".rebuilt")
