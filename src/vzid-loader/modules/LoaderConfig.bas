@@ -15,7 +15,7 @@ Public Function LoaderConfig_DefaultJsonText() As String
         "  ""repoUrl"": ""https://github.com/chassehiboux/Excel_VZID_Macros"",", _
         "  ""manifestUrl"": """ & VZID_MANIFEST_URL & """,", _
         "  ""selectedRegion"": """ & VZID_DEFAULT_REGION & """,", _
-        "  ""activeMainVersion"": ""0.1.0"",", _
+        "  ""activeMainVersion"": ""0.1.1"",", _
         "  ""activeLoaderVersion"": """ & VZID_LOADER_VERSION & """,", _
         "  ""availableMainVersion"": """",", _
         "  ""availableMainDownloadUrl"": """",", _

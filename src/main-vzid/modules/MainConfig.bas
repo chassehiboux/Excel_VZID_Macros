@@ -63,8 +63,8 @@ Public Function MainConfig_DefaultJsonText() As String
         "  ""repoUrl"": ""https://github.com/chassehiboux/Excel_VZID_Macros"",", _
         "  ""manifestUrl"": """ & MAIN_CONFIG_MANIFEST_URL & """,", _
         "  ""selectedRegion"": ""KGN"",", _
-        "  ""activeMainVersion"": ""0.1.0"",", _
-        "  ""activeLoaderVersion"": ""0.1.0"",", _
+        "  ""activeMainVersion"": ""0.1.1"",", _
+        "  ""activeLoaderVersion"": ""0.1.1"",", _
         "  ""availableMainVersion"": """",", _
         "  ""availableMainDownloadUrl"": """",", _
         "  ""pendingMainVersion"": """",", _

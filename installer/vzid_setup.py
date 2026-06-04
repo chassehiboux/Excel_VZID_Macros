@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import sys
@@ -54,6 +55,10 @@ def config_path() -> Path:
     return config_dir() / "config.json"
 
 
+def config_template_path() -> Path:
+    return bundled_path(f"config/{CONFIG_TEMPLATE}")
+
+
 def loader_path() -> Path:
     return loader_dir() / LOADER_FILE
 
@@ -83,11 +88,57 @@ def ensure_dirs() -> None:
         path.mkdir(parents=True, exist_ok=True)
 
 
+def load_json_file(path: Path) -> dict:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def save_json_file(path: Path, payload: dict) -> None:
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def clear_pending_updates() -> None:
+    for pending_file in pending_dir().glob("MainVZID*.xlam"):
+        try:
+            pending_file.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def sync_config() -> None:
+    template = load_json_file(config_template_path())
+    current = load_json_file(config_path()) if config_path().exists() else {}
+
+    merged = dict(template)
+    if isinstance(current, dict):
+        merged.update(current)
+
+    active_main_version = str(template.get("activeMainVersion", "0.0.0"))
+    active_loader_version = str(template.get("activeLoaderVersion", "0.0.0"))
+
+    merged["activeMainVersion"] = active_main_version
+    merged["activeLoaderVersion"] = active_loader_version
+    merged["availableMainVersion"] = ""
+    merged["availableMainDownloadUrl"] = ""
+    merged["pendingMainVersion"] = ""
+    merged["pendingMainPath"] = ""
+    merged["lastUpdateCheckAt"] = ""
+    merged["lastUpdateStatus"] = "up_to_date"
+    merged["lastUpdateMessage"] = f"Установлена версия {active_main_version} через setup.exe."
+
+    save_json_file(config_path(), merged)
+
+
 def copy_assets() -> None:
     shutil.copy2(bundled_path(LOADER_FILE), loader_path())
     shutil.copy2(bundled_path(MAIN_FILE), main_path())
     if not config_path().exists():
-        shutil.copy2(bundled_path(f"config/{CONFIG_TEMPLATE}"), config_path())
+        shutil.copy2(config_template_path(), config_path())
+
+    clear_pending_updates()
+    sync_config()
 
 
 def register_loader_addin() -> None:
@@ -109,30 +160,56 @@ def detect_excel_version() -> str:
 
 def register_loader_addin_in_registry(excel_version: str, addin_path: Path) -> None:
     options_key_path = f"Software\\Microsoft\\Office\\{excel_version}\\Excel\\Options"
-    normalized_target = str(addin_path.resolve()).lower()
     value_to_store = f'"{addin_path.resolve()}"'
 
     with winreg.CreateKey(winreg.HKEY_CURRENT_USER, options_key_path) as key:
-        existing_name = None
-        next_free_name = "OPEN"
+        existing_values: list[str] = []
+        existing_names: list[str] = []
         index = 0
 
-        while True:
+        while index < 64:
             value_name = "OPEN" if index == 0 else f"OPEN{index}"
             try:
                 current_value, _ = winreg.QueryValueEx(key, value_name)
             except FileNotFoundError:
-                next_free_name = value_name
-                break
+                index += 1
+                continue
 
-            normalized_value = str(current_value).strip().strip('"').lower()
-            if normalized_value == normalized_target:
-                existing_name = value_name
-                break
-
+            existing_names.append(value_name)
+            existing_values.append(str(current_value))
             index += 1
 
-        winreg.SetValueEx(key, existing_name or next_free_name, 0, winreg.REG_SZ, value_to_store)
+        for value_name in existing_names:
+            try:
+                winreg.DeleteValue(key, value_name)
+            except FileNotFoundError:
+                pass
+
+        preserved_values = []
+        for current_value in existing_values:
+            candidate_name = startup_entry_basename(current_value)
+            if candidate_name in {LOADER_FILE.lower(), MAIN_FILE.lower()}:
+                continue
+            preserved_values.append(current_value)
+
+        preserved_values.append(value_to_store)
+
+        for index, current_value in enumerate(preserved_values):
+            value_name = "OPEN" if index == 0 else f"OPEN{index}"
+            winreg.SetValueEx(key, value_name, 0, winreg.REG_SZ, current_value)
+
+
+def startup_entry_basename(value: str) -> str:
+    normalized_value = str(value).strip()
+    if normalized_value.count('"') >= 2:
+        first_quote = normalized_value.find('"')
+        last_quote = normalized_value.rfind('"')
+        if last_quote > first_quote:
+            normalized_value = normalized_value[first_quote + 1:last_quote]
+    else:
+        normalized_value = normalized_value.strip('"')
+
+    return Path(normalized_value).name.lower()
 
 
 def show_info(title: str, text: str) -> None:
@@ -186,6 +263,17 @@ def main() -> int:
             "Если Excel сейчас открыт, полностью закройте все его окна и откройте Excel заново.",
         )
         return 0
+    except OSError as exc:  # pragma: no cover
+        if getattr(exc, "winerror", None) == 32:
+            show_error(
+                "VZID Setup",
+                "Не удалось заменить файлы надстройки, потому что Excel все еще держит их открытыми.\n\n"
+                "Полностью закройте все окна Excel и запустите setup.exe снова.",
+            )
+            return 1
+
+        show_error("VZID Setup", f"Установка завершилась ошибкой:\n{exc}")
+        return 1
     except Exception as exc:  # pragma: no cover
         show_error("VZID Setup", f"Установка завершилась ошибкой:\n{exc}")
         return 1

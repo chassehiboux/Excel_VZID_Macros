@@ -10,10 +10,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def read_version(version_arg: str | None) -> str:
-    if version_arg:
-        return version_arg.strip()
-    return (ROOT / "release" / "version.txt").read_text(encoding="utf-8").strip()
+def read_release_value(arg_value: str | None, file_name: str) -> str:
+    if arg_value:
+        return arg_value.strip()
+    return (ROOT / "release" / file_name).read_text(encoding="utf-8").strip()
 
 
 def run_script(script_name: str, *args: str) -> None:
@@ -23,15 +23,25 @@ def run_script(script_name: str, *args: str) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--version")
+    parser.add_argument("--min-loader-version")
     args = parser.parse_args()
 
-    version_text = read_version(args.version)
+    version_text = read_release_value(args.version, "version.txt")
+    min_loader_version = read_release_value(args.min_loader_version, "min-loader-version.txt")
     build_dir = ROOT / "build"
     release_dir = build_dir / "release"
     release_dir.mkdir(parents=True, exist_ok=True)
 
     run_script("build_addins.py", "--output-dir", str(build_dir))
-    run_script("generate_manifest.py", "--version", version_text, "--output", str(release_dir / "manifest.json"))
+    run_script(
+        "generate_manifest.py",
+        "--version",
+        version_text,
+        "--min-loader-version",
+        min_loader_version,
+        "--output",
+        str(release_dir / "manifest.json"),
+    )
     run_script("build_setup.py", "--dist-dir", str(release_dir))
 
     shutil.copy2(build_dir / "LoaderVZID.xlam", release_dir / "LoaderVZID.xlam")
