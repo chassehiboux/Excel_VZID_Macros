@@ -12,7 +12,6 @@ import win32com.client
 
 
 ROOT = Path(__file__).resolve().parents[1]
-LOADER_SRC = ROOT / "src" / "vzid-loader"
 MAIN_SRC = ROOT / "src" / "main-vzid"
 CONTENT_TYPES_NS = "http://schemas.openxmlformats.org/package/2006/content-types"
 RELS_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
@@ -133,17 +132,13 @@ def patch_custom_ui(xlam_path: Path, custom_ui_path: Path) -> None:
         rebuilt_path.replace(xlam_path)
 
 
-def build_all(output_dir: Path) -> tuple[Path, Path]:
+def build_main(output_dir: Path) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    loader_path = output_dir / "LoaderVZID.xlam"
     main_path = output_dir / "MainVZID.xlam"
-
-    create_addin(LOADER_SRC, loader_path)
     create_addin(MAIN_SRC, main_path)
     patch_custom_ui(main_path, MAIN_SRC / "customui" / "customUI14.xml")
-
-    return loader_path, main_path
+    return main_path
 
 
 def main() -> int:
@@ -152,8 +147,7 @@ def main() -> int:
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir).resolve()
-    loader_path, main_path = build_all(output_dir)
-    print(loader_path)
+    main_path = build_main(output_dir)
     print(main_path)
     return 0
 

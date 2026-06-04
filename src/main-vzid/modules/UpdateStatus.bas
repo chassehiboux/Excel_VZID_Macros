@@ -10,13 +10,15 @@ Public Function UpdateStatus_RibbonText() As String
         Case "update_available"
             UpdateStatus_RibbonText = "Обновления: доступна " & MainConfig_ReadValue("availableMainVersion", "")
         Case "downloaded"
-            UpdateStatus_RibbonText = "Обновления: скачано, перезапустите Excel"
-        Case "loader_upgrade_required"
+            UpdateStatus_RibbonText = "Обновления: ждёт закрытия Excel"
+        Case "updater_upgrade_required"
             UpdateStatus_RibbonText = "Обновления: нужен новый setup.exe"
         Case "check_failed"
             UpdateStatus_RibbonText = "Обновления: проверить не удалось"
         Case "download_failed"
             UpdateStatus_RibbonText = "Обновления: скачивание не удалось"
+        Case "activation_failed"
+            UpdateStatus_RibbonText = "Обновления: применить не удалось"
         Case "up_to_date"
             UpdateStatus_RibbonText = "Обновления: версия актуальна"
         Case Else

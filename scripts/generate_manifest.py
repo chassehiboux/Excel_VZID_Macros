@@ -26,6 +26,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", required=True)
     parser.add_argument("--min-loader-version", required=True)
+    parser.add_argument("--min-updater-version", required=True)
     parser.add_argument("--main-xlam", default=str(ROOT / "build" / "MainVZID.xlam"))
     parser.add_argument("--output", default=str(ROOT / "build" / "manifest.json"))
     args = parser.parse_args()
@@ -39,6 +40,7 @@ def main() -> int:
         "releaseVersion": args.version,
         "publishedAt": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
         "minLoaderVersion": args.min_loader_version,
+        "minUpdaterVersion": args.min_updater_version,
         "mainDownloadUrl": f"{REPO_URL}/releases/download/v{args.version}/MainVZID.xlam",
         "mainSha256": file_sha256(main_xlam_path),
         "notesUrl": f"{REPO_URL}/releases/tag/v{args.version}",

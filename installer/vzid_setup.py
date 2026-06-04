@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import shutil
 import sys
-import argparse
 import winreg
 from pathlib import Path
 from tkinter import Tk, messagebox
@@ -14,8 +14,9 @@ import win32com.client
 
 
 APP_NAME = "VZID"
-LOADER_FILE = "LoaderVZID.xlam"
+LEGACY_LOADER_FILE = "LoaderVZID.xlam"
 MAIN_FILE = "MainVZID.xlam"
+UPDATER_FILE = "updater.exe"
 CONFIG_TEMPLATE = "config.template.json"
 INSTALL_BASE_DIR: Path | None = None
 NO_UI = False
@@ -31,16 +32,28 @@ def base_dir() -> Path:
     return Path(root) / APP_NAME
 
 
-def loader_dir() -> Path:
+def addin_dir() -> Path:
+    return base_dir() / "addin"
+
+
+def updater_dir() -> Path:
+    return base_dir() / "updater"
+
+
+def updates_dir() -> Path:
+    return base_dir() / "updates"
+
+
+def backup_dir() -> Path:
+    return base_dir() / "backup"
+
+
+def legacy_loader_dir() -> Path:
     return base_dir() / "loader"
 
 
-def current_dir() -> Path:
-    return base_dir() / "versions" / "current"
-
-
-def pending_dir() -> Path:
-    return base_dir() / "versions" / "pending"
+def legacy_versions_dir() -> Path:
+    return base_dir() / "versions"
 
 
 def config_dir() -> Path:
@@ -59,12 +72,12 @@ def config_template_path() -> Path:
     return bundled_path(f"config/{CONFIG_TEMPLATE}")
 
 
-def loader_path() -> Path:
-    return loader_dir() / LOADER_FILE
-
-
 def main_path() -> Path:
-    return current_dir() / MAIN_FILE
+    return addin_dir() / MAIN_FILE
+
+
+def updater_path() -> Path:
+    return updater_dir() / UPDATER_FILE
 
 
 def bundled_path(relative_path: str) -> Path:
@@ -84,7 +97,7 @@ def bundled_path(relative_path: str) -> Path:
 
 
 def ensure_dirs() -> None:
-    for path in (loader_dir(), current_dir(), pending_dir(), config_dir(), logs_dir()):
+    for path in (addin_dir(), updater_dir(), updates_dir(), backup_dir(), config_dir(), logs_dir()):
         path.mkdir(parents=True, exist_ok=True)
 
 
@@ -99,8 +112,27 @@ def save_json_file(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def clear_pending_updates() -> None:
-    for pending_file in pending_dir().glob("MainVZID*.xlam"):
+def clear_prepared_updates() -> None:
+    for prepared_file in updates_dir().glob("MainVZID*.xlam"):
+        try:
+            prepared_file.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def cleanup_legacy_layout() -> None:
+    legacy_files = [
+        legacy_loader_dir() / LEGACY_LOADER_FILE,
+        legacy_versions_dir() / "current" / MAIN_FILE,
+    ]
+
+    for legacy_file in legacy_files:
+        try:
+            legacy_file.unlink()
+        except FileNotFoundError:
+            pass
+
+    for pending_file in (legacy_versions_dir() / "pending").glob("MainVZID*.xlam"):
         try:
             pending_file.unlink()
         except FileNotFoundError:
@@ -115,15 +147,19 @@ def sync_config() -> None:
     if isinstance(current, dict):
         merged.update(current)
 
-    active_main_version = str(template.get("activeMainVersion", "0.0.0"))
-    active_loader_version = str(template.get("activeLoaderVersion", "0.0.0"))
+    for obsolete_key in ("activeLoaderVersion", "pendingMainVersion", "pendingMainPath"):
+        merged.pop(obsolete_key, None)
 
+    active_main_version = str(template.get("activeMainVersion", "0.0.0"))
+    active_updater_version = str(template.get("activeUpdaterVersion", "0.0.0"))
+
+    merged["schemaVersion"] = str(template.get("schemaVersion", "2"))
     merged["activeMainVersion"] = active_main_version
-    merged["activeLoaderVersion"] = active_loader_version
+    merged["activeUpdaterVersion"] = active_updater_version
     merged["availableMainVersion"] = ""
     merged["availableMainDownloadUrl"] = ""
-    merged["pendingMainVersion"] = ""
-    merged["pendingMainPath"] = ""
+    merged["preparedMainVersion"] = ""
+    merged["preparedMainPath"] = ""
     merged["lastUpdateCheckAt"] = ""
     merged["lastUpdateStatus"] = "up_to_date"
     merged["lastUpdateMessage"] = f"Установлена версия {active_main_version} через setup.exe."
@@ -132,18 +168,19 @@ def sync_config() -> None:
 
 
 def copy_assets() -> None:
-    shutil.copy2(bundled_path(LOADER_FILE), loader_path())
     shutil.copy2(bundled_path(MAIN_FILE), main_path())
+    shutil.copy2(bundled_path(f"updater/{UPDATER_FILE}"), updater_path())
     if not config_path().exists():
         shutil.copy2(config_template_path(), config_path())
 
-    clear_pending_updates()
+    clear_prepared_updates()
+    cleanup_legacy_layout()
     sync_config()
 
 
-def register_loader_addin() -> None:
+def register_main_addin() -> None:
     version = detect_excel_version()
-    register_loader_addin_in_registry(version, loader_path())
+    register_main_addin_in_registry(version, main_path())
 
 
 def detect_excel_version() -> str:
@@ -158,7 +195,7 @@ def detect_excel_version() -> str:
         pythoncom.CoUninitialize()
 
 
-def register_loader_addin_in_registry(excel_version: str, addin_path: Path) -> None:
+def register_main_addin_in_registry(excel_version: str, addin_path: Path) -> None:
     options_key_path = f"Software\\Microsoft\\Office\\{excel_version}\\Excel\\Options"
     value_to_store = f'"{addin_path.resolve()}"'
 
@@ -188,7 +225,7 @@ def register_loader_addin_in_registry(excel_version: str, addin_path: Path) -> N
         preserved_values = []
         for current_value in existing_values:
             candidate_name = startup_entry_basename(current_value)
-            if candidate_name in {LOADER_FILE.lower(), MAIN_FILE.lower()}:
+            if candidate_name in {LEGACY_LOADER_FILE.lower(), MAIN_FILE.lower()}:
                 continue
             preserved_values.append(current_value)
 
@@ -255,7 +292,7 @@ def main() -> int:
         ensure_dirs()
         copy_assets()
         if not args.skip_register:
-            register_loader_addin()
+            register_main_addin()
 
         show_info(
             "VZID Setup",

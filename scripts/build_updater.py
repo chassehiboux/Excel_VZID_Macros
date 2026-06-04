@@ -11,18 +11,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--main-xlam", default=str(ROOT / "build" / "MainVZID.xlam"))
-    parser.add_argument("--updater-exe", default=str(ROOT / "build" / "updater.exe"))
-    parser.add_argument("--config-template", default=str(ROOT / "config" / "config.template.json"))
-    parser.add_argument("--dist-dir", default=str(ROOT / "build" / "release"))
+    parser.add_argument("--dist-dir", default=str(ROOT / "build"))
     args = parser.parse_args()
 
-    main_xlam = Path(args.main_xlam).resolve()
-    updater_exe = Path(args.updater_exe).resolve()
-    config_template = Path(args.config_template).resolve()
     dist_dir = Path(args.dist_dir).resolve()
-
     dist_dir.mkdir(parents=True, exist_ok=True)
+
     pyi_root = ROOT / ".pyinstaller"
     work_dir = pyi_root / "work"
     spec_dir = pyi_root / "spec"
@@ -38,24 +32,18 @@ def main() -> int:
         "--onefile",
         "--windowed",
         "--name",
-        "setup",
+        "updater",
         "--distpath",
         str(dist_dir),
         "--workpath",
         str(work_dir),
         "--specpath",
         str(spec_dir),
-        "--add-data",
-        f"{main_xlam};.",
-        "--add-data",
-        f"{updater_exe};updater",
-        "--add-data",
-        f"{config_template};config",
-        str((ROOT / "installer" / "vzid_setup.py").resolve()),
+        str((ROOT / "updater" / "vzid_updater.py").resolve()),
     ]
 
     subprocess.run(command, check=True)
-    print(dist_dir / "setup.exe")
+    print(dist_dir / "updater.exe")
     return 0
 
 

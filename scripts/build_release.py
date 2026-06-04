@@ -24,28 +24,36 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--version")
     parser.add_argument("--min-loader-version")
+    parser.add_argument("--min-updater-version")
     args = parser.parse_args()
 
     version_text = read_release_value(args.version, "version.txt")
     min_loader_version = read_release_value(args.min_loader_version, "min-loader-version.txt")
+    min_updater_version = read_release_value(args.min_updater_version, "min-updater-version.txt")
     build_dir = ROOT / "build"
     release_dir = build_dir / "release"
     release_dir.mkdir(parents=True, exist_ok=True)
 
     run_script("build_addins.py", "--output-dir", str(build_dir))
+    run_script("build_updater.py", "--dist-dir", str(build_dir))
     run_script(
         "generate_manifest.py",
         "--version",
         version_text,
         "--min-loader-version",
         min_loader_version,
+        "--min-updater-version",
+        min_updater_version,
         "--output",
         str(release_dir / "manifest.json"),
     )
     run_script("build_setup.py", "--dist-dir", str(release_dir))
 
-    shutil.copy2(build_dir / "LoaderVZID.xlam", release_dir / "LoaderVZID.xlam")
     shutil.copy2(build_dir / "MainVZID.xlam", release_dir / "MainVZID.xlam")
+
+    legacy_loader_release = release_dir / "LoaderVZID.xlam"
+    if legacy_loader_release.exists():
+        legacy_loader_release.unlink()
 
     print(release_dir)
     return 0

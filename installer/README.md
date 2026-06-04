@@ -13,29 +13,31 @@
 ## Что должен сделать установщик
 
 1. Создать папки:
-   `%LocalAppData%\VZID\loader\`
-   `%LocalAppData%\VZID\versions\current\`
-   `%LocalAppData%\VZID\versions\pending\`
+   `%LocalAppData%\VZID\addin\`
+   `%LocalAppData%\VZID\updater\`
+   `%LocalAppData%\VZID\updates\`
+   `%LocalAppData%\VZID\backup\`
    `%LocalAppData%\VZID\config\`
    `%LocalAppData%\VZID\logs\`
-2. Положить загрузчик в `%LocalAppData%\VZID\loader\LoaderVZID.xlam`.
-3. Положить стартовую рабочую надстройку в `%LocalAppData%\VZID\versions\current\MainVZID.xlam`.
+2. Положить рабочую надстройку в `%LocalAppData%\VZID\addin\MainVZID.xlam`.
+3. Положить локальный `updater.exe` в `%LocalAppData%\VZID\updater\updater.exe`.
 4. Положить стартовый `config.json` в `%LocalAppData%\VZID\config\config.json`.
-5. Подключить `LoaderVZID.xlam` как обычную пользовательскую надстройку Excel.
+5. Подключить `MainVZID.xlam` как обычную пользовательскую надстройку Excel.
 
 Как это делается в MVP:
 
-- установщик пишет путь к `LoaderVZID.xlam` в пользовательский раздел Excel:
+- установщик пишет путь к `MainVZID.xlam` в пользовательский раздел Excel:
   `HKCU\Software\Microsoft\Office\<версия>\Excel\Options`
 - используется свободный слот `OPEN` / `OPEN1` / `OPEN2` и так далее;
-- за счёт этого Excel сам подхватывает загрузчик при следующем полном запуске;
+- за счёт этого Excel сам подхватывает надстройку при следующем полном запуске;
+- старые записи для `LoaderVZID.xlam` и `MainVZID.xlam` предварительно вычищаются;
 - `XLSTART` для этого не используется.
 
 ## Ограничения MVP
 
-- Обновление самого загрузчика не автоматизируется в первом прототипе.
+- Обновление самого `updater.exe` не автоматизируется в первом прототипе.
 - Основной сценарий обновления касается `MainVZID.xlam`.
-- При необходимости новый загрузчик ставится повторным запуском `setup.exe`.
+- При необходимости новый `updater.exe` ставится повторным запуском `setup.exe`.
 
 ## Команды сборки
 
