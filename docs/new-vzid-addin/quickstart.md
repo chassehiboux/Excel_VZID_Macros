@@ -38,3 +38,15 @@ python scripts/build_release.py
 - `build/release/manifest.json`
 - `build/release/setup.exe`
 - служебный `updater.exe` для упаковки в установку
+
+## Текущий минимальный цикл сопровождения
+
+```powershell
+python scripts/build_addins.py --output-dir build_manual_check
+python scripts/set_release_version.py 0.2.3
+python scripts/publish_release.py
+```
+
+Подробная инструкция:
+
+- `docs/new-vzid-addin/maintainer-guide.md`
